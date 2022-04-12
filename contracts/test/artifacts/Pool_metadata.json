@@ -1,0 +1,1459 @@
+{
+	"compiler": {
+		"version": "0.8.12+commit.f00d7308"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [
+			{
+				"inputs": [],
+				"stateMutability": "nonpayable",
+				"type": "constructor"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "owner",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "spender",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "value",
+						"type": "uint256"
+					}
+				],
+				"name": "Approval",
+				"type": "event"
+			},
+			{
+				"anonymous": true,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "bytes4",
+						"name": "sig",
+						"type": "bytes4"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "caller",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "bytes",
+						"name": "data",
+						"type": "bytes"
+					}
+				],
+				"name": "LOG_CALL",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "caller",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "tokenOut",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "tokenAmountOut",
+						"type": "uint256"
+					}
+				],
+				"name": "LOG_EXIT",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "caller",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "tokenIn",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "tokenAmountIn",
+						"type": "uint256"
+					}
+				],
+				"name": "LOG_JOIN",
+				"type": "event"
+			},
+			{
+				"anonymous": true,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "token",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "oracle",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "value",
+						"type": "uint256"
+					}
+				],
+				"name": "LOG_PRICE",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "caller",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "tokenIn",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "tokenOut",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "tokenAmountIn",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "tokenAmountOut",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "spread",
+						"type": "uint256"
+					}
+				],
+				"name": "LOG_SWAP",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "from",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "to",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "value",
+						"type": "uint256"
+					}
+				],
+				"name": "Transfer",
+				"type": "event"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "src",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "dst",
+						"type": "address"
+					}
+				],
+				"name": "allowance",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "dst",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amt",
+						"type": "uint256"
+					}
+				],
+				"name": "approve",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "whom",
+						"type": "address"
+					}
+				],
+				"name": "balanceOf",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "token",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "balance",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint80",
+						"name": "denorm",
+						"type": "uint80"
+					},
+					{
+						"internalType": "address",
+						"name": "_priceFeedAddress",
+						"type": "address"
+					}
+				],
+				"name": "bindMMM",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "decimals",
+				"outputs": [
+					{
+						"internalType": "uint8",
+						"name": "",
+						"type": "uint8"
+					}
+				],
+				"stateMutability": "pure",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "dst",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amt",
+						"type": "uint256"
+					}
+				],
+				"name": "decreaseApproval",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "poolAmountIn",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256[]",
+						"name": "minAmountsOut",
+						"type": "uint256[]"
+					}
+				],
+				"name": "exitPool",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "tokenOut",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "tokenAmountOut",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "maxPoolAmountIn",
+						"type": "uint256"
+					}
+				],
+				"name": "exitswapExternAmountOutMMM",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "poolAmountIn",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "tokenOut",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "poolAmountIn",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "minAmountOut",
+						"type": "uint256"
+					}
+				],
+				"name": "exitswapPoolAmountInMMM",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "tokenAmountOut",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "finalize",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "tokenIn",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "maxAmountIn",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "tokenOut",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "tokenAmountOut",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "maxPrice",
+						"type": "uint256"
+					}
+				],
+				"name": "getAmountInGivenOutMMM",
+				"outputs": [
+					{
+						"components": [
+							{
+								"internalType": "uint256",
+								"name": "amount",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "spread",
+								"type": "uint256"
+							}
+						],
+						"internalType": "struct Struct.SwapResult",
+						"name": "swapResult",
+						"type": "tuple"
+					},
+					{
+						"internalType": "uint256",
+						"name": "spotPriceAfter",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "tokenIn",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "tokenAmountIn",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "tokenOut",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "minAmountOut",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "maxPrice",
+						"type": "uint256"
+					}
+				],
+				"name": "getAmountOutGivenInMMM",
+				"outputs": [
+					{
+						"components": [
+							{
+								"internalType": "uint256",
+								"name": "amount",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "spread",
+								"type": "uint256"
+							}
+						],
+						"internalType": "struct Struct.SwapResult",
+						"name": "swapResult",
+						"type": "tuple"
+					},
+					{
+						"internalType": "uint256",
+						"name": "spotPriceAfter",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "token",
+						"type": "address"
+					}
+				],
+				"name": "getBalance",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "getController",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "getCoverageParameters",
+				"outputs": [
+					{
+						"internalType": "uint64",
+						"name": "",
+						"type": "uint64"
+					},
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint8",
+						"name": "",
+						"type": "uint8"
+					},
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "token",
+						"type": "address"
+					}
+				],
+				"name": "getDenormalizedWeight",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "owner",
+						"type": "address"
+					}
+				],
+				"name": "getNonce",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "tokenIn",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "tokenOut",
+						"type": "address"
+					}
+				],
+				"name": "getSpotPriceSansFee",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "spotPrice",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "getSwapFee",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "token",
+						"type": "address"
+					}
+				],
+				"name": "getTokenOracleInitialPrice",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "token",
+						"type": "address"
+					}
+				],
+				"name": "getTokenPriceOracle",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "getTokens",
+				"outputs": [
+					{
+						"internalType": "address[]",
+						"name": "tokens",
+						"type": "address[]"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "token",
+						"type": "address"
+					}
+				],
+				"name": "gulp",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "dst",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amt",
+						"type": "uint256"
+					}
+				],
+				"name": "increaseApproval",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "t",
+						"type": "address"
+					}
+				],
+				"name": "isBound",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "isFinalized",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "isPublicSwap",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "poolAmountOut",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256[]",
+						"name": "maxAmountsIn",
+						"type": "uint256[]"
+					}
+				],
+				"name": "joinPool",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "tokenIn",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "tokenAmountIn",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "minPoolAmountOut",
+						"type": "uint256"
+					}
+				],
+				"name": "joinswapExternAmountInMMM",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "poolAmountOut",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "tokenIn",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "poolAmountOut",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "maxAmountIn",
+						"type": "uint256"
+					}
+				],
+				"name": "joinswapPoolAmountOutMMM",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "tokenAmountIn",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "name",
+				"outputs": [
+					{
+						"internalType": "string",
+						"name": "",
+						"type": "string"
+					}
+				],
+				"stateMutability": "pure",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "bytes",
+						"name": "signature",
+						"type": "bytes"
+					},
+					{
+						"internalType": "uint256[]",
+						"name": "maxAmountsIn",
+						"type": "uint256[]"
+					},
+					{
+						"internalType": "address",
+						"name": "owner",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "poolAmountOut",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "deadline",
+						"type": "uint256"
+					}
+				],
+				"name": "permitJoinPool",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "token",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "balance",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint80",
+						"name": "denorm",
+						"type": "uint80"
+					},
+					{
+						"internalType": "address",
+						"name": "_priceFeedAddress",
+						"type": "address"
+					}
+				],
+				"name": "rebindMMM",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "manager",
+						"type": "address"
+					}
+				],
+				"name": "setController",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "_dynamicCoverageFeesHorizon",
+						"type": "uint256"
+					}
+				],
+				"name": "setDynamicCoverageFeesHorizon",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint64",
+						"name": "_dynamicCoverageFeesZ",
+						"type": "uint64"
+					}
+				],
+				"name": "setDynamicCoverageFeesZ",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint8",
+						"name": "_priceStatisticsLookbackInRound",
+						"type": "uint8"
+					}
+				],
+				"name": "setPriceStatisticsLookbackInRound",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "_priceStatisticsLookbackInSec",
+						"type": "uint256"
+					}
+				],
+				"name": "setPriceStatisticsLookbackInSec",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "bool",
+						"name": "public_",
+						"type": "bool"
+					}
+				],
+				"name": "setPublicSwap",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "swapFee",
+						"type": "uint256"
+					}
+				],
+				"name": "setSwapFee",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "tokenIn",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "tokenAmountIn",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "tokenOut",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "minAmountOut",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "maxPrice",
+						"type": "uint256"
+					}
+				],
+				"name": "swapExactAmountInMMM",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "tokenAmountOut",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "spotPriceAfter",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "tokenIn",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "maxAmountIn",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "tokenOut",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "tokenAmountOut",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "maxPrice",
+						"type": "uint256"
+					}
+				],
+				"name": "swapExactAmountOutMMM",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "tokenAmountIn",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "spotPriceAfter",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "symbol",
+				"outputs": [
+					{
+						"internalType": "string",
+						"name": "",
+						"type": "string"
+					}
+				],
+				"stateMutability": "pure",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "totalSupply",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "dst",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amt",
+						"type": "uint256"
+					}
+				],
+				"name": "transfer",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "src",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "dst",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amt",
+						"type": "uint256"
+					}
+				],
+				"name": "transferFrom",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "token",
+						"type": "address"
+					}
+				],
+				"name": "unbindMMM",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			}
+		],
+		"devdoc": {
+			"kind": "dev",
+			"methods": {
+				"bindMMM(address,uint256,uint80,address)": {
+					"params": {
+						"_priceFeedAddress": "The token's Chainlink price feed",
+						"balance": "The token's balance",
+						"denorm": "The token's weight",
+						"token": "The token's address"
+					}
+				},
+				"exitPool(uint256,uint256[])": {
+					"details": "The order of minAmount of each token must be the same as the _tokens' addresses stored in the pool",
+					"params": {
+						"minAmountsOut": "Minimum accepted token amount out",
+						"poolAmountIn": "Amount of pool shares a LP wishes to liquidate for tokens"
+					}
+				},
+				"joinPool(uint256,uint256[])": {
+					"details": "The order of maxAmount of each token must be the same as the _tokens' addresses stored in the pool",
+					"params": {
+						"maxAmountsIn": "Maximum accepted token amount in",
+						"poolAmountOut": "Amount of pool shares a LP wishes to receive"
+					}
+				},
+				"permitJoinPool(bytes,uint256[],address,uint256,uint256)": {
+					"details": "The order of maxAmount of each token must be the same as the _tokens' addresses stored in the pool ref: https://eips.ethereum.org/EIPS/eip-712",
+					"params": {
+						"deadline": "Expiration date of the signature",
+						"maxAmountsIn": "Maximum accepted token amount in",
+						"owner": "Address of the receiver",
+						"poolAmountOut": "Amount of pool shares a LP wishes to receive",
+						"signature": "Owner's signature"
+					}
+				},
+				"rebindMMM(address,uint256,uint80,address)": {
+					"params": {
+						"_priceFeedAddress": "The token's Chainlink price feed",
+						"balance": "The token's balance",
+						"denorm": "The token's weight",
+						"token": "The token's address"
+					}
+				},
+				"totalSupply()": {
+					"details": "Returns the amount of tokens in existence."
+				},
+				"unbindMMM(address)": {
+					"params": {
+						"token": "The token's address"
+					}
+				}
+			},
+			"version": 1
+		},
+		"userdoc": {
+			"kind": "user",
+			"methods": {
+				"bindMMM(address,uint256,uint80,address)": {
+					"notice": "Add a new token to the pool"
+				},
+				"exitPool(uint256,uint256[])": {
+					"notice": "Remove liquidity from a pool"
+				},
+				"finalize()": {
+					"notice": "Enables publicswap and finalizes the pool's tokens, price feeds, initial shares, balances and weights"
+				},
+				"joinPool(uint256,uint256[])": {
+					"notice": "Add liquidity to a pool"
+				},
+				"permitJoinPool(bytes,uint256[],address,uint256,uint256)": {
+					"notice": "Add liquidity to a pool"
+				},
+				"rebindMMM(address,uint256,uint80,address)": {
+					"notice": "Replace a binded token's balance, weight and price feed's address"
+				},
+				"unbindMMM(address)": {
+					"notice": "Remove a new token from the pool"
+				}
+			},
+			"version": 1
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"contracts/test/Pool.sol": "Pool"
+		},
+		"evmVersion": "london",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": true,
+			"runs": 1
+		},
+		"remappings": []
+	},
+	"sources": {
+		"@openzeppelin/contracts/token/ERC20/IERC20.sol": {
+			"keccak256": "0xbbc8ac883ac3c0078ce5ad3e288fbb3ffcc8a30c3a98c0fda0114d64fc44fca2",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://87a7a5d2f6f63f84598af02b8c50ca2df2631cb8ba2453e8d95fcb17e4be9824",
+				"dweb:/ipfs/QmR76hqtAcRqoFj33tmNjcWTLrgNsAaakYwnKZ8zoJtKei"
+			]
+		},
+		"@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol": {
+			"keccak256": "0xc3d946432c0ddbb1f846a0d3985be71299df331b91d06732152117f62f0be2b5",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://4632c341a06ba5c079b51ca5a915efab4e6ab57735b37839b3e8365ff806a43e",
+				"dweb:/ipfs/QmTHT3xHYed2wajEoA5qu7ii2BxLpPhQZHwAhtLK5Z7ANK"
+			]
+		},
+		"@openzeppelin/contracts/utils/Address.sol": {
+			"keccak256": "0x2ccf9d2313a313d41a791505f2b5abfdc62191b5d4334f7f7a82691c088a1c87",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://b3a57d0854b2fdce6ebff933a48dca2445643d1eccfc27f00292e937f26c6a58",
+				"dweb:/ipfs/QmW45rZooS9TqR4YXUbjRbtf2Bpb5ouSarBvfW1LdGprvV"
+			]
+		},
+		"@openzeppelin/contracts/utils/Strings.sol": {
+			"keccak256": "0x32c202bd28995dd20c4347b7c6467a6d3241c74c8ad3edcbb610cd9205916c45",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://8179c356adb19e70d6b31a1eedc8c5c7f0c00e669e2540f4099e3844c6074d30",
+				"dweb:/ipfs/QmWFbivarEobbqhS1go64ootVuHfVohBseerYy9FTEd1W2"
+			]
+		},
+		"@openzeppelin/contracts/utils/cryptography/ECDSA.sol": {
+			"keccak256": "0x3c07f43e60e099b3b157243b3152722e73b80eeb7985c2cd73712828d7f7da29",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://466ffb5a6e3bd65fffd996f9287ffd240ea21588a338c6efe143d94eaed014a7",
+				"dweb:/ipfs/Qmans3vvPJZcvxe9KLAPc9Xwe4TFVTJdzaQGpi62Vrhoe2"
+			]
+		},
+		"@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol": {
+			"keccak256": "0xdaa933bc9c03aa8b33696fd980f9c68012620d328380b5ac33846d92d5ee1214",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://e86b04ab0a71ebcd5c5d3d58165a459902039d8c0240641a5003a3c83ec1af11",
+				"dweb:/ipfs/QmS2qr6eEyZAhhcf1To17Ea2gtGqquknEcZTmmTabfrt3F"
+			]
+		},
+		"contracts/test/ChainlinkUtils.sol": {
+			"keccak256": "0x751cf4b10e016e7f51b1d5c82dcfa37a5c920cd39c600426b49a6b9e26e5b914",
+			"license": "GPL-3.0-or-later",
+			"urls": [
+				"bzz-raw://b34c25e49f9a668c339c297b0b8e2f6761d2467eab7b6e4baa84d3baf3a91ae6",
+				"dweb:/ipfs/QmYz1Uw6zFhxafMKpsExNqSZv1XXA6aLThcZUCNKWL914D"
+			]
+		},
+		"contracts/test/Const.sol": {
+			"keccak256": "0x7d568b77b847e19cc433fbe240e28e6cba95cb71656f13aaa1f14e0ce4ff1d3c",
+			"license": "GPL-3.0-or-later",
+			"urls": [
+				"bzz-raw://2cda9be49e16c563f51224b67ca187ed2d8658eb1b9286c65e8ec7f3ed526de2",
+				"dweb:/ipfs/QmNsPnVaZMqGEocDB2C5jff42UyJHiRuh3AsBDcrL18yNR"
+			]
+		},
+		"contracts/test/GeometricBrownianMotionOracle.sol": {
+			"keccak256": "0x6f67fff245418ef4655b534e619b419661e40faf154451db0533f05c300871bc",
+			"license": "GPL-3.0-or-later",
+			"urls": [
+				"bzz-raw://72bc38f653529771f0e86b02000dd141198a81e5f2c863431cea4254cd2930fa",
+				"dweb:/ipfs/QmcJKQsk9c3hzYpWh1s4qduzQp4v9pg3zwTvtfkGkYZxVm"
+			]
+		},
+		"contracts/test/LogExpMath.sol": {
+			"keccak256": "0x0653e949d1df0f12c1678c5c5ee30f92c11ea67725f9950a706873776f67cc59",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://71a06bf303b0bfcdb0e650f89e9db4825d1207970fb8eb0f4ba5f5ca51ea1881",
+				"dweb:/ipfs/QmVzqXtnQWzmAMKXZHDTvLEJmFLREd8UEPvd7B8JYf5zxC"
+			]
+		},
+		"contracts/test/Math.sol": {
+			"keccak256": "0x747aac3bfbfcabe344c1d3ac2babffbf09e6c303e3285b84aa0dd38aa52311a9",
+			"license": "GPL-3.0-or-later",
+			"urls": [
+				"bzz-raw://d1091a3c9f9a5bc9bcd2681b1fbe35c44e4a80cb63fb8bf38219895d8dfd31ca",
+				"dweb:/ipfs/QmfNsH7sHVDRx8jeXGq1R2wvhkAsqTGWbLbYDpgEFARNm3"
+			]
+		},
+		"contracts/test/Num.sol": {
+			"keccak256": "0x2f6bed1d7474366d1d4495ff364031941ce2e1ba8131ab0a2eb67d33d015d2d0",
+			"license": "GPL-3.0-or-later",
+			"urls": [
+				"bzz-raw://64ffdba7d7ece39bde04375a4fccc38a136a5fd30ce4ab4790ca4dfda6c581ac",
+				"dweb:/ipfs/QmQmFAet3sxhbKVNXf9pYSAytr9RbPMaXuDXXxSZchdkRs"
+			]
+		},
+		"contracts/test/Pool.sol": {
+			"keccak256": "0xcc9e03cb7f991506325cd2f3edae451d9d19266d8535e0d54bc970b2e5afe29b",
+			"license": "GPL-3.0-or-later",
+			"urls": [
+				"bzz-raw://16b7a3a4df03f403e7c6fc940c5830aae3e6612c5425d03808e2fc2c87f73e6c",
+				"dweb:/ipfs/QmRxCTJF7g6yacG7QZVZYFatRs4HEFRHFvnHLyZ4oxf3LQ"
+			]
+		},
+		"contracts/test/PoolToken.sol": {
+			"keccak256": "0x4fe0dea4c43343373295173b6089157be570960b6b68739e85d2fa12224d67db",
+			"license": "GPL-3.0-or-later",
+			"urls": [
+				"bzz-raw://3727e8f2dba784a63dccbb6845cae49d4bff7f3d7244606bbc52876a37472e24",
+				"dweb:/ipfs/QmaowRM4stodK37PpATt8arS1z5UbC1Z47Ha7ChFP3Gq9L"
+			]
+		},
+		"contracts/test/interfaces/IAggregatorV3.sol": {
+			"keccak256": "0xcd521e8d1bef9c05b56e35b987e220ea65db563376c012ceee123d19d6c497f8",
+			"license": "GPL-3.0-or-later",
+			"urls": [
+				"bzz-raw://09ada0fe8f03fe80824a321b0cafa71be36d86b53716fac604f9cddb97d41c93",
+				"dweb:/ipfs/QmfQV2tJnpfQa5YacTmS5LvZG5zUc5deafbe4KFC8rWnjZ"
+			]
+		},
+		"contracts/test/interfaces/IPausedFactory.sol": {
+			"keccak256": "0x7a764106b1abe61de582543260ac6aff00af1461f4b1a180b566ffe1e5ed42d4",
+			"license": "GPL-3.0-or-later",
+			"urls": [
+				"bzz-raw://c5d238ac03968a291905482907ddfd2b0b94d5d2748988bce982c8dc8e38476a",
+				"dweb:/ipfs/QmWHVAk27s7ekbtk9gAsGpmowtTqjn5n3Bu7RyWurYabtH"
+			]
+		},
+		"contracts/test/structs/Struct.sol": {
+			"keccak256": "0xc128392718a912cb57891f3942b91e27f8c8f440d98f6a3b80a138d8b01632e3",
+			"license": "GPL-3.0-or-later",
+			"urls": [
+				"bzz-raw://85cc25860033e7173d689d9cefd525d33252b0c2948c78eebbfe82ef9eca5d6b",
+				"dweb:/ipfs/QmbPxMsLrjwQnEE5VVcxcS7siU1qN3v96MYRJgSR6SA855"
+			]
+		}
+	},
+	"version": 1
+}

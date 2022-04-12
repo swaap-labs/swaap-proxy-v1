@@ -1,0 +1,601 @@
+{
+	"compiler": {
+		"version": "0.8.12+commit.f00d7308"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "_factory",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "_wnative",
+						"type": "address"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "constructor"
+			},
+			{
+				"inputs": [
+					{
+						"components": [
+							{
+								"internalType": "address",
+								"name": "pool",
+								"type": "address"
+							},
+							{
+								"internalType": "address",
+								"name": "tokenIn",
+								"type": "address"
+							},
+							{
+								"internalType": "address",
+								"name": "tokenOut",
+								"type": "address"
+							},
+							{
+								"internalType": "uint256",
+								"name": "swapAmount",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "limitReturnAmount",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "maxPrice",
+								"type": "uint256"
+							}
+						],
+						"internalType": "struct Proxy.Swap[]",
+						"name": "swaps",
+						"type": "tuple[]"
+					},
+					{
+						"internalType": "address",
+						"name": "tokenIn",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "tokenOut",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "totalAmountIn",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "minTotalAmountOut",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "deadline",
+						"type": "uint256"
+					}
+				],
+				"name": "batchSwapExactIn",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "totalAmountOut",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "payable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"components": [
+							{
+								"internalType": "address",
+								"name": "pool",
+								"type": "address"
+							},
+							{
+								"internalType": "address",
+								"name": "tokenIn",
+								"type": "address"
+							},
+							{
+								"internalType": "address",
+								"name": "tokenOut",
+								"type": "address"
+							},
+							{
+								"internalType": "uint256",
+								"name": "swapAmount",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "limitReturnAmount",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "maxPrice",
+								"type": "uint256"
+							}
+						],
+						"internalType": "struct Proxy.Swap[]",
+						"name": "swaps",
+						"type": "tuple[]"
+					},
+					{
+						"internalType": "address",
+						"name": "tokenIn",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "tokenOut",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "maxTotalAmountIn",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "deadline",
+						"type": "uint256"
+					}
+				],
+				"name": "batchSwapExactOut",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "totalAmountIn",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "payable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"components": [
+							{
+								"internalType": "address",
+								"name": "token",
+								"type": "address"
+							},
+							{
+								"internalType": "uint256",
+								"name": "balance",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint80",
+								"name": "weight",
+								"type": "uint80"
+							},
+							{
+								"internalType": "address",
+								"name": "oracle",
+								"type": "address"
+							}
+						],
+						"internalType": "struct Proxy.BindToken[]",
+						"name": "bindTokens",
+						"type": "tuple[]"
+					},
+					{
+						"internalType": "bool",
+						"name": "finalize",
+						"type": "bool"
+					},
+					{
+						"internalType": "uint256",
+						"name": "deadline",
+						"type": "uint256"
+					}
+				],
+				"name": "createPool",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "pool",
+						"type": "address"
+					}
+				],
+				"stateMutability": "payable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"components": [
+							{
+								"internalType": "address",
+								"name": "token",
+								"type": "address"
+							},
+							{
+								"internalType": "uint256",
+								"name": "balance",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint80",
+								"name": "weight",
+								"type": "uint80"
+							},
+							{
+								"internalType": "address",
+								"name": "oracle",
+								"type": "address"
+							}
+						],
+						"internalType": "struct Proxy.BindToken[]",
+						"name": "bindTokens",
+						"type": "tuple[]"
+					},
+					{
+						"components": [
+							{
+								"internalType": "uint8",
+								"name": "priceStatisticsLookbackInRound",
+								"type": "uint8"
+							},
+							{
+								"internalType": "uint64",
+								"name": "dynamicCoverageFeesZ",
+								"type": "uint64"
+							},
+							{
+								"internalType": "uint256",
+								"name": "swapFee",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "priceStatisticsLookbackInSec",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "dynamicCoverageFeesHorizon",
+								"type": "uint256"
+							},
+							{
+								"internalType": "bool",
+								"name": "publicSwap",
+								"type": "bool"
+							}
+						],
+						"internalType": "struct Proxy.Params",
+						"name": "params",
+						"type": "tuple"
+					},
+					{
+						"internalType": "bool",
+						"name": "finalize",
+						"type": "bool"
+					},
+					{
+						"internalType": "uint256",
+						"name": "deadline",
+						"type": "uint256"
+					}
+				],
+				"name": "createPoolWithParams",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "poolAddress",
+						"type": "address"
+					}
+				],
+				"stateMutability": "payable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "contract IPool",
+						"name": "pool",
+						"type": "address"
+					},
+					{
+						"internalType": "bytes",
+						"name": "signature",
+						"type": "bytes"
+					},
+					{
+						"internalType": "uint256[]",
+						"name": "maxAmountsIn",
+						"type": "uint256[]"
+					},
+					{
+						"internalType": "address",
+						"name": "owner",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "poolAmountOut",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "deadline",
+						"type": "uint256"
+					}
+				],
+				"name": "joinPool",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"components": [
+							{
+								"internalType": "address",
+								"name": "pool",
+								"type": "address"
+							},
+							{
+								"internalType": "address",
+								"name": "tokenIn",
+								"type": "address"
+							},
+							{
+								"internalType": "address",
+								"name": "tokenOut",
+								"type": "address"
+							},
+							{
+								"internalType": "uint256",
+								"name": "swapAmount",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "limitReturnAmount",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "maxPrice",
+								"type": "uint256"
+							}
+						],
+						"internalType": "struct Proxy.Swap[][]",
+						"name": "swapSequences",
+						"type": "tuple[][]"
+					},
+					{
+						"internalType": "address",
+						"name": "tokenIn",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "tokenOut",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "totalAmountIn",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "minTotalAmountOut",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "deadline",
+						"type": "uint256"
+					}
+				],
+				"name": "multihopBatchSwapExactIn",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "totalAmountOut",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "payable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"components": [
+							{
+								"internalType": "address",
+								"name": "pool",
+								"type": "address"
+							},
+							{
+								"internalType": "address",
+								"name": "tokenIn",
+								"type": "address"
+							},
+							{
+								"internalType": "address",
+								"name": "tokenOut",
+								"type": "address"
+							},
+							{
+								"internalType": "uint256",
+								"name": "swapAmount",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "limitReturnAmount",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "maxPrice",
+								"type": "uint256"
+							}
+						],
+						"internalType": "struct Proxy.Swap[][]",
+						"name": "swapSequences",
+						"type": "tuple[][]"
+					},
+					{
+						"internalType": "address",
+						"name": "tokenIn",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "tokenOut",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "maxTotalAmountIn",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "deadline",
+						"type": "uint256"
+					}
+				],
+				"name": "multihopBatchSwapExactOut",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "totalAmountIn",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "payable",
+				"type": "function"
+			},
+			{
+				"stateMutability": "payable",
+				"type": "receive"
+			}
+		],
+		"devdoc": {
+			"kind": "dev",
+			"methods": {},
+			"version": 1
+		},
+		"userdoc": {
+			"kind": "user",
+			"methods": {},
+			"version": 1
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"contracts/Proxy.sol": "Proxy"
+		},
+		"evmVersion": "london",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": true,
+			"runs": 1
+		},
+		"remappings": []
+	},
+	"sources": {
+		"@openzeppelin/contracts/token/ERC20/IERC20.sol": {
+			"keccak256": "0xbbc8ac883ac3c0078ce5ad3e288fbb3ffcc8a30c3a98c0fda0114d64fc44fca2",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://87a7a5d2f6f63f84598af02b8c50ca2df2631cb8ba2453e8d95fcb17e4be9824",
+				"dweb:/ipfs/QmR76hqtAcRqoFj33tmNjcWTLrgNsAaakYwnKZ8zoJtKei"
+			]
+		},
+		"@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol": {
+			"keccak256": "0xc3d946432c0ddbb1f846a0d3985be71299df331b91d06732152117f62f0be2b5",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://4632c341a06ba5c079b51ca5a915efab4e6ab57735b37839b3e8365ff806a43e",
+				"dweb:/ipfs/QmTHT3xHYed2wajEoA5qu7ii2BxLpPhQZHwAhtLK5Z7ANK"
+			]
+		},
+		"@openzeppelin/contracts/utils/Address.sol": {
+			"keccak256": "0x2ccf9d2313a313d41a791505f2b5abfdc62191b5d4334f7f7a82691c088a1c87",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://b3a57d0854b2fdce6ebff933a48dca2445643d1eccfc27f00292e937f26c6a58",
+				"dweb:/ipfs/QmW45rZooS9TqR4YXUbjRbtf2Bpb5ouSarBvfW1LdGprvV"
+			]
+		},
+		"contracts/Proxy.sol": {
+			"keccak256": "0xf2c0f7abb8d75c28bf7d3e3d8b4af04172b47104cefef8bd1ddad089be1c784a",
+			"license": "GPL-3.0-or-later",
+			"urls": [
+				"bzz-raw://379abc436663915980db926628a12338144bff7053215ab649c531a4710fd5fe",
+				"dweb:/ipfs/QmcEnv6aE72k4DdqSDvy3tSUhkJjR23oqMS63RpBii1L45"
+			]
+		},
+		"contracts/interfaces/IFactory.sol": {
+			"keccak256": "0x94bf2b25229464c4ce4b23cf1c9e5887012cdd3ab2aa930118ab9c800c5a0889",
+			"license": "GPL-3.0-or-later",
+			"urls": [
+				"bzz-raw://b0fce6a345759698a73ed186f331100cee0e0c68fb93377c6c13058eadd5e7f3",
+				"dweb:/ipfs/Qmayaa2SiQG15P24LhSTpfoG5rhTtJtaXcMt6gSgPZnXkG"
+			]
+		},
+		"contracts/interfaces/IMath.sol": {
+			"keccak256": "0xf0526fdee859fae3a4b4e381ef55c7973f1d4c738b8cfa2471877f0c6f90c63f",
+			"license": "GPL-3.0-or-later",
+			"urls": [
+				"bzz-raw://c49e9fb9c63bd06fa4e8481d3e2c98fe1227f00ddaa1e1b927934e32ba28056a",
+				"dweb:/ipfs/QmTweq2X9Xm7TQX9naKmR5tmXarLEQV6Yz6wUV3LBrXGw2"
+			]
+		},
+		"contracts/interfaces/IPool.sol": {
+			"keccak256": "0x041e7c5246dd2e444bf76d10e57b0f7f27fc84eb1e8912e4fa21495683d4a1c2",
+			"license": "GPL-3.0-or-later",
+			"urls": [
+				"bzz-raw://647681606fefbc4ff212163485c4c89762f4c7faa6fa2ae994a156ec84d76630",
+				"dweb:/ipfs/QmWA18MAJvHi7tT93bBkBdnrYLw2586veNYJ28bLsdckDG"
+			]
+		},
+		"contracts/interfaces/IToken.sol": {
+			"keccak256": "0xefd2623983bc8c7c88621814cc8e4372332d80ef81c8eeb60e555d87459b1a15",
+			"license": "GPL-3.0-or-later",
+			"urls": [
+				"bzz-raw://e4ee6edcf790f3e3d6a4d498e5bfae123cb860704c6324e7ed1140b49dacb854",
+				"dweb:/ipfs/QmXiLwaUAGWmVWaKeJAE7cN8EQb8yDGDCut7YGtefuwFU2"
+			]
+		},
+		"contracts/structs/Struct.sol": {
+			"keccak256": "0xc128392718a912cb57891f3942b91e27f8c8f440d98f6a3b80a138d8b01632e3",
+			"license": "GPL-3.0-or-later",
+			"urls": [
+				"bzz-raw://85cc25860033e7173d689d9cefd525d33252b0c2948c78eebbfe82ef9eca5d6b",
+				"dweb:/ipfs/QmbPxMsLrjwQnEE5VVcxcS7siU1qN3v96MYRJgSR6SA855"
+			]
+		}
+	},
+	"version": 1
+}
