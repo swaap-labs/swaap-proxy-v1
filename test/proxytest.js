@@ -195,8 +195,7 @@ contract('Proxy - BatchSwap', async (accounts) => {
         // For swap1, amountOut is irrelevant since it will be calculated on-chain and depends on amountOut of swap2
         let swap1 = [tpool2.address, WETH, DAI, toWei('0'), toWei('20'), MAX];
         // swap = [pool, tokenIn, tokenOut, amountOut, maxAmountIn, maxPrice]
-        // For swap2, maxAmountIn is irrelevant because all the intermediate token will be swapped
-        let swap2 = [tpool1.address, DAI, WBTC, toWei('1'), toWei('0'), MAX];
+        let swap2 = [tpool1.address, DAI, WBTC, toWei('1'), toWei('75000'), MAX];
         // WBTC --> DAI --> WETH
         let multihop1 = [swap1, swap2];
         // WBTC --> WETH
@@ -207,8 +206,8 @@ contract('Proxy - BatchSwap', async (accounts) => {
         await proxy.multihopBatchSwapExactOut(multihops, WETH, WBTC, toWei('30'), MAX, {from: ttrader});
 
         // Trading using directly pools' interface
-        let intermediateDai = await cpool1.getAmountInGivenOutMMM.call(DAI, WBTC, toWei('1'), {from: ctrader});
-        intermediateDai = (intermediateDai).toString();        
+        let intermediateDai = await cpool1.getAmountInGivenOutMMM.call(DAI, MAX, WBTC, toWei('1'), MAX, {from: ctrader});
+        intermediateDai = (intermediateDai.swapResult.amount).toString();        
 
         await cpool2.swapExactAmountOutMMM(WETH, toWei('20'), DAI, intermediateDai, MAX, {from: ctrader});
         await cpool1.swapExactAmountOutMMM(DAI, toWei('100000'), WBTC, toWei('1'), MAX, {from: ctrader});

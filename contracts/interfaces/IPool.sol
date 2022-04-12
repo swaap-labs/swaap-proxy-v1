@@ -14,10 +14,12 @@
 
 pragma solidity 0.8.12;
 
+import "../test/structs/Struct.sol";
+
 interface IPool {
     function swapExactAmountInMMM(address, uint, address, uint, uint) external returns (uint, uint);
     function swapExactAmountOutMMM(address, uint, address, uint, uint) external returns (uint, uint);
-    function getAmountInGivenOutMMM(address, address, uint256) external view returns (uint256);
+    function getAmountInGivenOutMMM(address, uint256, address, uint256, uint256) external view returns (Struct.SwapResult memory, uint256);
     function setSwapFee(uint) external;
     function setDynamicCoverageFeesZ(uint64) external;
     function setDynamicCoverageFeesHorizon(uint) external;

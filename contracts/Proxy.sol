@@ -58,6 +58,11 @@ contract Proxy {
         uint80  weight;
         address oracle;
     }
+    
+    struct SwapResult {
+        uint256 amount;
+        uint256 spread;
+    }
 
     modifier _beforeDeadline(uint deadline) {
         require(block.timestamp <= deadline, "ERR_PASSED_DEADLINE");
@@ -248,7 +253,6 @@ contract Proxy {
             // Specific code for a simple swap and a multihop (2 swaps in sequence)
 
             if (swapSequences[i].length == 1) {
-
                 Swap memory swap = swapSequences[i][0];
                 require(factory.isPool(swap.pool), "ERR_UNREGISTERED_POOL");
                 IToken SwapTokenIn = IToken(swap.tokenIn);
@@ -270,19 +274,33 @@ contract Proxy {
                 // Consider we are swapping A -> B and B -> C. The goal is to buy a given amount
                 // of token C. But first we need to buy B with A so we can then buy C with B
                 // To get the exact amount of C we then first need to calculate how much B we'll need:
-                uint intermediateTokenAmount; // This would be token B as described above
                 Swap memory firstSwap = swapSequences[i][0];
                 Swap memory secondSwap = swapSequences[i][1];
                 require(factory.isPool(secondSwap.pool), "ERR_UNREGISTERED_POOL");
                 IPool poolSecondSwap = IPool(secondSwap.pool);
-                intermediateTokenAmount = poolSecondSwap.getAmountInGivenOutMMM(secondSwap.tokenIn, secondSwap.tokenOut, secondSwap.swapAmount);
-                tokenAmountInFirstSwap = poolSecondSwap.getAmountInGivenOutMMM(firstSwap.tokenIn, firstSwap.tokenOut, intermediateTokenAmount);
+                IPool poolFirstSwap = IPool(firstSwap.pool);
+                (Struct.SwapResult memory secondSwapResult, ) = poolSecondSwap.getAmountInGivenOutMMM(
+                                                                                                        secondSwap.tokenIn,
+                                                                                                        secondSwap.limitReturnAmount,
+                                                                                                        secondSwap.tokenOut,
+                                                                                                        secondSwap.swapAmount,
+                                                                                                        secondSwap.maxPrice
+                                                                                                    );
+                // This would be token B as described above
+                uint intermediateTokenAmount = secondSwapResult.amount;
+                (Struct.SwapResult memory firstSwapResult, ) = poolFirstSwap.getAmountInGivenOutMMM(
+                                                                                                        firstSwap.tokenIn,
+                                                                                                        firstSwap.limitReturnAmount,
+                                                                                                        firstSwap.tokenOut,
+                                                                                                        intermediateTokenAmount,
+                                                                                                        firstSwap.maxPrice
+                                                                                                    );
+                tokenAmountInFirstSwap = firstSwapResult.amount;
                 require(tokenAmountInFirstSwap <= firstSwap.limitReturnAmount, "ERR_LIMIT_IN");
 
                 //// Buy intermediateTokenAmount of token B with A in the first pool
                 require(factory.isPool(firstSwap.pool), "ERR_UNREGISTERED_POOL");
                 IToken FirstSwapTokenIn = IToken(firstSwap.tokenIn);
-                IPool poolFirstSwap = IPool(firstSwap.pool);
                 if (FirstSwapTokenIn.allowance(address(this), firstSwap.pool) > 0) {
                     FirstSwapTokenIn.approve(firstSwap.pool, 0);
                 }
@@ -294,6 +312,7 @@ contract Proxy {
                                         intermediateTokenAmount, // This is the amount of token B we need
                                         firstSwap.maxPrice
                                     );
+
                 //// Buy the final amount of token C desired
                 IToken SecondSwapTokenIn = IToken(secondSwap.tokenIn);
                 if (SecondSwapTokenIn.allowance(address(this), secondSwap.pool) > 0) {

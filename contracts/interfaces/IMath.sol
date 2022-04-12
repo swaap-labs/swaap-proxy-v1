@@ -14,7 +14,7 @@
 
 pragma solidity 0.8.12;
 
-import "../structs/Struct.sol";
+import "../test/structs/Struct.sol";
 
 interface IMath {
     function calcInGivenOutMMM(
