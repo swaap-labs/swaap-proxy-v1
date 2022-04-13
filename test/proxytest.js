@@ -254,8 +254,8 @@ contract('Proxy - BatchSwap', async (accounts) => {
 
         let bindTokens = [bindToken1, bindToken2, bindToken3];
         // inputs: bindTokens[], finalize, deadline
-        let POOL5 = await proxy.createPool.call(bindTokens, 'true', MAX, {from: ttrader}); 
-        await proxy.createPool(bindTokens, 'true', MAX, {from: ttrader}); 
+        let POOL5 = await proxy.createPool.call(bindTokens, true, MAX, {from: ttrader}); 
+        await proxy.createPool(bindTokens, true, MAX, {from: ttrader}); 
         
         pool5 = await Pool.at(POOL5);
 
@@ -287,6 +287,52 @@ contract('Proxy - BatchSwap', async (accounts) => {
         let signature = await web3.eth.sign(hashTypedData, owner);
         await proxy.joinPool(pool5.address, signature, maxAmountsIn, owner, poolAmountOut, deadline, {from: owner});
         assert.equal((await pool5.balanceOf.call(owner)).toString(), toWei('200'));
+        await assertProxyBalances();
+    });
+
+    it('Create a pool with parameters & without finalizing', async () => {
+        // bindToken = [tokenAddress, balance, weight, oracleAddress]
+        let bindToken1 = [WETH, toWei('2'), toWei('5'), ETHAggregatorAddress];
+        let bindToken2 = [DAI, toWei('3500'), toWei('2.5'), DAIAggregatorAddress];
+        let bindToken3 = [WBTC, toWei('0.25'), toWei('6'), BTCAggregatorAddress];
+
+        let params = [
+            publicSwap = 'true',
+            priceStatisticsLookbackInRound = '5',
+            dynamicCoverageFeesZ = toWei('10'),
+            swapFee = toWei('0.1'),
+            priceStatisticsLookbackInSec = '2000',
+            dynamicCoverageFeesHorizon = toWei('50'),
+        ];
+
+        let bindTokens = [bindToken1, bindToken2, bindToken3];
+        // inputs: bindTokens[], finalize, deadline
+        let POOL6 = await proxy.createPoolWithParams.call(bindTokens, params,  false, MAX, {from: ttrader}); 
+        await proxy.createPoolWithParams(bindTokens, params, false, MAX, {from: ttrader}); 
+        
+        let pool6 = await Pool.at(POOL6);
+
+        // assert creation of pool and bound tokens
+        assert.equal((await factory.isPool.call(POOL6)).toString(), 'true');
+        assert.equal((await pool6.isBound(WETH)).toString(), 'true');
+        assert.equal((await pool6.isBound(DAI)).toString(), 'true');
+        assert.equal((await pool6.isBound(WBTC)).toString(), 'true');
+        // assert bound tokens parameters
+        assert.equal((await pool6.getDenormalizedWeight.call(WETH)).toString(), toWei('5'));
+        assert.equal((await dai.balanceOf.call(POOL6)).toString(), toWei('3500'));
+        assert.equal((await pool6.getTokenPriceOracle.call(WBTC)).toString(), BTCAggregatorAddress);
+
+        let poolTokenBalance = (await pool6.balanceOf.call(ttrader)).toString();
+        assert.equal(poolTokenBalance, toWei('0'));
+        assert.equal((await pool6.isPublicSwap.call()).toString(), 'true');
+
+        let coverageParams = await pool6.getCoverageParameters.call()
+        assert.equal(await pool6.getSwapFee.call(), toWei('0.1'));
+        assert.equal(coverageParams[0], toWei('10'));
+        assert.equal(coverageParams[1], toWei('50'));
+        assert.equal(coverageParams[2], 5);
+        assert.equal(coverageParams[3], 2000);
+
         await assertProxyBalances();
     });
 
