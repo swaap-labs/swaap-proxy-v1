@@ -129,6 +129,23 @@ contract('Proxy - BatchSwap', async (accounts) => {
 
     });
 
+    it('Fails when exceeding deadline', async () => {
+        // Trading using proxy
+        // swap = [pool, tokenIn, tokenOut, amountIn, minAmountOut, maxPrice]
+        // On a real trade 'minAmountOut' and 'maxPrice' should be well calibrated
+        let swap1 = [tpool1.address, WETH, DAI, toWei('1'), toWei('1000'), MAX];
+        let swap2 = [tpool1.address, WETH, DAI, toWei('0.5'), toWei('500'), MAX];
+        let swap3 = [tpool2.address, WETH, DAI, toWei('0.25'), toWei('250'), MAX];
+
+        let batchSwap = [swap1, swap2, swap3];
+
+        // batchSwapExactIn(swaps[], tokenIn, tokenOut, totalAmountIn(= sum of tokenIn), minTotalAmountOut, deadline)
+        truffleAssert.reverts(
+            proxy.batchSwapExactIn(batchSwap, WETH, DAI, toWei('1.75'), toWei('1750'), 0, { from: ttrader }),
+            'ERR_PASSED_DEADLINE',
+        );
+    });
+
     it('batchSwapExactIn', async () => {
         // Trading using proxy
         // swap = [pool, tokenIn, tokenOut, amountIn, minAmountOut, maxPrice]
