@@ -39,8 +39,7 @@ contract('Proxy - BatchSwap', async (accounts) => {
         return ((Decimal(expected).minus(Decimal(actual))).div(expected)).abs();
     }    
 
-    async function assertBalances() {
-        console.log("Asserting balances");
+    async function assertTraderBalances() {
         let ttraderBalance = fromWei(await weth.balanceOf.call(ttrader));
         let ctraderBalance = fromWei(await weth.balanceOf.call(ctrader));
         let relDif = calcRelativeDiff(ttraderBalance, ctraderBalance);
@@ -55,6 +54,15 @@ contract('Proxy - BatchSwap', async (accounts) => {
         ctraderBalance = fromWei(await wbtc.balanceOf.call(ctrader));
         relDif = calcRelativeDiff(ttraderBalance, ctraderBalance);
         assert.isAtMost(relDif.toNumber(), errorDelta);
+    }
+
+    async function assertProxyBalances() {
+        let ethBalance = fromWei(await weth.balanceOf.call(proxy.address));
+        assert.equal(ethBalance, 0);
+        let daiBalance = fromWei(await dai.balanceOf.call(proxy.address));
+        assert.equal(daiBalance, 0);
+        let wbtcBalance = fromWei(await wbtc.balanceOf.call(proxy.address));
+        assert.equal(wbtcBalance, 0);
     }
 
     before(async () => {        
@@ -139,7 +147,8 @@ contract('Proxy - BatchSwap', async (accounts) => {
         await cpool1.swapExactAmountInMMM(WETH, toWei('0.5'), DAI, toWei('500'), MAX, {from: ctrader});
         await cpool2.swapExactAmountInMMM(WETH, toWei('0.25'), DAI, toWei('250'), MAX, {from: ctrader});
 
-        await assertBalances();
+        await assertTraderBalances();
+        await assertProxyBalances();
     });
 
     it('batchSwapExactOut', async () => {
@@ -159,7 +168,8 @@ contract('Proxy - BatchSwap', async (accounts) => {
         await cpool1.swapExactAmountOutMMM(DAI, toWei('5000'), WETH, toWei('0.5'), MAX, {from: ctrader});
         await cpool2.swapExactAmountOutMMM(DAI, toWei('2500'), WETH, toWei('0.25'), MAX, {from: ctrader});
 
-        await assertBalances();
+        await assertTraderBalances();
+        await assertProxyBalances();
     });
 
     it('multihopBatchSwapExactIn', async () => {
@@ -185,7 +195,8 @@ contract('Proxy - BatchSwap', async (accounts) => {
         await cpool2.swapExactAmountInMMM(DAI, intermediateDai, WETH, toWei('2'), MAX, {from: ctrader});
         await cpool2.swapExactAmountInMMM(WBTC, toWei('0.5'), WETH, toWei('0.75'), MAX, {from: ctrader});
 
-        await assertBalances();     
+        await assertTraderBalances();
+        await assertProxyBalances();     
     });
 
     it('multihopBatchSwapExactOut', async () => {
@@ -213,7 +224,8 @@ contract('Proxy - BatchSwap', async (accounts) => {
         await cpool1.swapExactAmountOutMMM(DAI, toWei('100000'), WBTC, toWei('1'), MAX, {from: ctrader});
         await cpool2.swapExactAmountOutMMM(WETH, toWei('10'), WBTC, toWei('0.5'), MAX, {from: ctrader});
         
-        await assertBalances();
+        await assertTraderBalances();
+        await assertProxyBalances();
     });
 
     // dev network should be a ganache client forked from ethereum or polygon's mainnet
@@ -260,6 +272,7 @@ contract('Proxy - BatchSwap', async (accounts) => {
         
         let poolTokenBalance = (await pool5.balanceOf.call(ttrader)).toString();
         assert.equal(poolTokenBalance, toWei('100'));
+        await assertProxyBalances();
     });
 
     it('Join a pool using proxy', async () => {
@@ -274,6 +287,7 @@ contract('Proxy - BatchSwap', async (accounts) => {
         let signature = await web3.eth.sign(hashTypedData, owner);
         await proxy.joinPool(pool5.address, signature, maxAmountsIn, owner, poolAmountOut, deadline, {from: owner});
         assert.equal((await pool5.balanceOf.call(owner)).toString(), toWei('200'));
+        await assertProxyBalances();
     });
 
 });
