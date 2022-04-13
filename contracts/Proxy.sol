@@ -44,12 +44,12 @@ contract Proxy {
     }
 
     struct Params {
+        bool    publicSwap;
         uint8   priceStatisticsLookbackInRound;
         uint64  dynamicCoverageFeesZ;
         uint256 swapFee;
         uint256 priceStatisticsLookbackInSec;
         uint256 dynamicCoverageFeesHorizon;
-        bool    publicSwap;
     }
 
     struct BindToken {
@@ -354,11 +354,12 @@ contract Proxy {
         IPool pool = IPool(poolAddress);
         
         // setting the pool's parameters
+        pool.setPublicSwap(params.publicSwap);
         pool.setSwapFee(params.swapFee);
         pool.setDynamicCoverageFeesZ(params.dynamicCoverageFeesZ);
         pool.setDynamicCoverageFeesHorizon(params.dynamicCoverageFeesHorizon);
         pool.setPriceStatisticsLookbackInRound(params.priceStatisticsLookbackInRound);
-        pool.setPriceStatisticsLookbackInSec(params.priceStatisticsLookbackInSec);    
+        pool.setPriceStatisticsLookbackInSec(params.priceStatisticsLookbackInSec);
 
         _createPool(poolAddress, bindTokens, finalize, deadline);
     }
