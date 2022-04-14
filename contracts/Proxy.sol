@@ -38,7 +38,7 @@ contract Proxy {
         address tokenIn;
         address tokenOut;
         uint    swapAmount; // tokenInAmount / tokenOutAmount
-        uint    limitReturnAmount; // minAmountOut / maxAmountIn
+        uint    limitAmount; // minAmountOut / maxAmountIn
         uint    maxPrice;
     }
 
@@ -99,7 +99,7 @@ contract Proxy {
 
             require(factory.isPool(swap.pool), "ERR_UNREGISTERED_POOL");
 
-            IERC20 SwapTokenIn = IERC20(swap.tokenIn);
+            IERC20 SwapTokenIn = IERC20(tokenIn);
             IPool pool = IPool(swap.pool);
 
             // required for some ERC20 such as USDT before changing the allowed transferable tokens
@@ -113,10 +113,10 @@ contract Proxy {
             SwapTokenIn.approve(swap.pool, swap.swapAmount);
 
             (uint tokenAmountOut,) = pool.swapExactAmountInMMM(
-                                        swap.tokenIn,
+                                        tokenIn,
                                         swap.swapAmount,
-                                        swap.tokenOut,
-                                        swap.limitReturnAmount,
+                                        tokenOut,
+                                        swap.limitAmount,
                                         swap.maxPrice
                                     );
             
@@ -149,7 +149,7 @@ contract Proxy {
 
             require(factory.isPool(swap.pool), "ERR_UNREGISTERED_POOL");
 
-            IERC20 SwapTokenIn = IERC20(swap.tokenIn);
+            IERC20 SwapTokenIn = IERC20(tokenIn);
             IPool pool = IPool(swap.pool);
 
             // required for some ERC20 such as USDT before changing the allowed transferable tokens
@@ -160,12 +160,12 @@ contract Proxy {
 
             // approving type(uint).max may result an error for some ERC20 tokens
             // https://github.com/d-xo/weird-erc20
-            SwapTokenIn.approve(swap.pool, swap.limitReturnAmount);
+            SwapTokenIn.approve(swap.pool, swap.limitAmount);
 
             (uint tokenAmountIn,) = pool.swapExactAmountOutMMM(
-                                        swap.tokenIn,
-                                        swap.limitReturnAmount,
-                                        swap.tokenOut,
+                                        tokenIn,
+                                        swap.limitAmount,
+                                        tokenOut,
                                         swap.swapAmount,
                                         swap.maxPrice
                                     );
@@ -216,7 +216,7 @@ contract Proxy {
                                             swap.tokenIn,
                                             swap.swapAmount,
                                             swap.tokenOut,
-                                            swap.limitReturnAmount,
+                                            swap.limitAmount,
                                             swap.maxPrice
                                         );
                 unchecked{++j;}
@@ -260,11 +260,11 @@ contract Proxy {
                 if (SwapTokenIn.allowance(address(this), swap.pool) > 0) {
                     SwapTokenIn.approve(swap.pool, 0);
                 }
-                SwapTokenIn.approve(swap.pool, swap.limitReturnAmount);
+                SwapTokenIn.approve(swap.pool, swap.limitAmount);
 
                 (tokenAmountInFirstSwap,) = pool.swapExactAmountOutMMM(
                                         swap.tokenIn,
-                                        swap.limitReturnAmount,
+                                        swap.limitAmount,
                                         swap.tokenOut,
                                         swap.swapAmount,
                                         swap.maxPrice
@@ -280,7 +280,7 @@ contract Proxy {
                 IPool poolFirstSwap = IPool(firstSwap.pool);
                 (Struct.SwapResult memory secondSwapResult, ) = poolSecondSwap.getAmountInGivenOutMMM(
                                                                                                         secondSwap.tokenIn,
-                                                                                                        secondSwap.limitReturnAmount,
+                                                                                                        secondSwap.limitAmount,
                                                                                                         secondSwap.tokenOut,
                                                                                                         secondSwap.swapAmount,
                                                                                                         secondSwap.maxPrice
@@ -289,13 +289,13 @@ contract Proxy {
                 uint intermediateTokenAmount = secondSwapResult.amount;
                 (Struct.SwapResult memory firstSwapResult, ) = poolFirstSwap.getAmountInGivenOutMMM(
                                                                                                         firstSwap.tokenIn,
-                                                                                                        firstSwap.limitReturnAmount,
+                                                                                                        firstSwap.limitAmount,
                                                                                                         firstSwap.tokenOut,
                                                                                                         intermediateTokenAmount,
                                                                                                         firstSwap.maxPrice
                                                                                                     );
                 tokenAmountInFirstSwap = firstSwapResult.amount;
-                require(tokenAmountInFirstSwap <= firstSwap.limitReturnAmount, "ERR_LIMIT_IN");
+                require(tokenAmountInFirstSwap <= firstSwap.limitAmount, "ERR_LIMIT_IN");
 
                 //// Buy intermediateTokenAmount of token B with A in the first pool
                 require(factory.isPool(firstSwap.pool), "ERR_UNREGISTERED_POOL");
@@ -360,7 +360,7 @@ contract Proxy {
         pool.setPriceStatisticsLookbackInRound(params.priceStatisticsLookbackInRound);
         pool.setPriceStatisticsLookbackInSec(params.priceStatisticsLookbackInSec);
 
-        _createPool(poolAddress, bindTokens, finalize, deadline);
+        _setPool(poolAddress, bindTokens, finalize, deadline);
     }
 
     // create pool with default parameters
@@ -374,10 +374,10 @@ contract Proxy {
     {
         pool = factory.newPool();
 
-        _createPool(pool, bindTokens, finalize, deadline);
+        _setPool(pool, bindTokens, finalize, deadline);
     }
 
-    function _createPool(
+    function _setPool(
         address pool,
 	    BindToken[] calldata bindTokens,
         bool finalize,
