@@ -77,8 +77,16 @@ contract Proxy {
         wnative = _wnative;
     }
 
-    /*
-    *   TokenIn and TokenOut should be the same for each swap
+    /**
+    * @notice Swap the same tokenIn/tokenOut pair from multiple pools given the amount of tokenIn on each swap
+    * @dev totalAmountIn should be equal to the sum of tokenAmountIn on each swap
+    * @param swaps Array of swaps
+    * @param tokenIn Address of tokenIn
+    * @param tokenOut Address of tokenOut
+    * @param totalAmountIn Maximum amount of tokenIn that the user is willing to trade
+    * @param minTotalAmountOut Minimum amount of tokenOut that the user wants to receive
+    * @param deadline Maximum deadline for accepting the trade
+    * @return totalAmountOut Total amount of tokenOut received
     */
     function batchSwapExactIn(
         Swap[] memory swaps,
@@ -131,6 +139,16 @@ contract Proxy {
         transferAll(tokenIn, getBalance(tokenIn));
     }
 
+
+    /**
+    * @notice Swap the same tokenIn/tokenOut pair from multiple pools given the amount of tokenOut on each swap
+    * @param swaps Array of swaps
+    * @param tokenIn Address of tokenIn
+    * @param tokenOut Address of tokenOut
+    * @param totalAmountIn Maximum amount of tokenIn that the user is willing to trade
+    * @param deadline Maximum deadline for accepting the trade
+    * @return totalAmountIn Total amount of traded tokenIn
+    */
     function batchSwapExactOut(
         Swap[] memory swaps,
         address tokenIn,
@@ -180,6 +198,26 @@ contract Proxy {
         transferAll(tokenIn, getBalance(tokenIn));
     }
 
+
+    /**
+    * @notice Performs multiple swapSequences given the amount of tokenIn on each swap 
+    * @dev Few considerations: 
+    * - swapSequences[i][j]:
+    *   a) i: represents a swap sequence (swapSequences[i]   : tokenIn --> B --> C --> tokenOut)
+    *   b) j: represents a swap          (swapSequences[i][0]: tokenIn --> B)
+    * - rows 'i' could be of varying lengths for ex:
+    * - swapSequences = {swapSequence 1: tokenIn --> B --> C --> tokenOut,
+    *                    swapSequence 2: tokenIn --> tokenOut}
+    * - each swap sequence should have the same starting tokenIn and finishing tokenOut
+    * - totalAmountIn should be equal to the sum of tokenAmountIn on each swapSequence
+    * @param swapSequences Array of swapSequences
+    * @param tokenIn Address of tokenIn
+    * @param tokenOut Address of tokenOut
+    * @param totalAmountIn Maximum amount of tokenIn that the user is willing to trade
+    * @param minTotalAmountOut Minimum amount of tokenOut that the user must receive
+    * @param deadline Maximum deadline for accepting the trade
+    * @return totalAmountOut Total amount of tokenOut received
+    */
     function multihopBatchSwapExactIn(
         Swap[][] memory swapSequences,
         address tokenIn,
@@ -233,7 +271,26 @@ contract Proxy {
 
     }
 
-
+    /**
+    * @notice Performs multiple swapSequences given the amount of tokenOut on each swapSequence 
+    * @dev Few considerations: 
+    * - swapSequences[i][j]:
+    *   a) i: represents a swap sequence (swapSequences[i]   : tokenIn --> B --> tokenOut)
+    *   b) j: represents a swap          (swapSequences[i][0]: tokenIn --> B)
+    * - rows 'i' could be of varying lengths for ex:
+    * - swapSequences = {swapSequence 1: tokenIn --> B --> tokenOut,
+    *                    swapSequence 2: tokenIn --> tokenOut}
+    * - each swap sequence should have the same starting tokenIn and finishing tokenOut
+    * - maxTotalAmountIn can be differennt than the sum of tokenAmountIn on each swapSequence
+    * - totalAmountOut is equal to the sum of the amount of tokenOut on each swap sequence
+    * - /!\ /!\ a swap sequence should have 1 multihop at most (swapSequences[i].length <= 2) /!\ /!\
+    * @param swapSequences Array of swapSequences
+    * @param tokenIn Address of tokenIn
+    * @param tokenOut Address of tokenOut
+    * @param maxTotalAmountIn Maximum amount of tokenIn that the user is willing to trade
+    * @param deadline Maximum deadline for accepting the trade
+    * @return totalAmountIn Total amount of traded tokenIn
+    */
     function multihopBatchSwapExactOut(
         Swap[][] memory swapSequences,
         address tokenIn,
@@ -338,8 +395,14 @@ contract Proxy {
         transferAll(tokenIn, getBalance(tokenIn));
     }
 
-
-    // create pool with customized parameters
+    /**
+    * @notice Creates a pool with customized parameters
+    * @param bindTokens Array containing the information of the tokens to bind [tokenAddress, balance, weight, oracleAddress]
+    * @param params Customized parameters of the pool 
+    * @param finalize Bool to finalize the pool or not
+    * @param deadline Maximum deadline for accepting the creation of the pool
+    * @return poolAddress The created pool's address
+    */
     function createPoolWithParams(
 	    BindToken[] calldata bindTokens,
         Params calldata params,
@@ -363,18 +426,24 @@ contract Proxy {
         _setPool(poolAddress, bindTokens, finalize, deadline);
     }
 
-    // create pool with default parameters
+    /**
+    * @notice Creates a pool with default parameters
+    * @param bindTokens Array containing the information of the tokens to bind [tokenAddress, balance, weight, oracleAddress]
+    * @param finalize Bool to finalize the pool or not
+    * @param deadline Maximum deadline for accepting the creation of the pool
+    * @return poolAddress The created pool's address
+    */
     function createPool(
 	    BindToken[] calldata bindTokens,
         bool finalize,
         uint deadline
     ) 
         external payable
-        returns (address pool)
+        returns (address poolAddress)
     {
-        pool = factory.newPool();
+        poolAddress = factory.newPool();
 
-        _setPool(pool, bindTokens, finalize, deadline);
+        _setPool(poolAddress, bindTokens, finalize, deadline);
     }
 
     function _setPool(
