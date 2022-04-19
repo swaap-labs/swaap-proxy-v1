@@ -27,6 +27,8 @@ interface IPool {
     function setPriceStatisticsLookbackInSec(uint) external;
     function bindMMM(address, uint, uint80, address) external;
     function permitJoinPool(bytes calldata, uint[] calldata, address, uint, uint) external;
+    function joinPool(uint, uint[] calldata) external;
+    function joinswapExternAmountInMMM(address, uint, uint) external;
     function setPublicSwap(bool) external;
     function setController(address) external;
     function finalize() external;

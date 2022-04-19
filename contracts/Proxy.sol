@@ -527,6 +527,59 @@ contract Proxy {
 
     }
 
+    // Join pool without time constraints
+    function unconstrainedjoinPool(
+        address pool,
+        uint256[] calldata maxAmountsIn,
+        uint256 poolAmountOut,
+        uint256 deadline
+    )
+    external
+    _beforeDeadline(deadline)
+    {
+
+        require(factory.isPool(pool), "ERR_UNREGISTERED_POOL");
+        address[] memory tokensIn = IPool(pool).getTokens();
+
+        for(uint i; i < tokensIn.length;) {
+            transferFromAll(tokensIn[i], maxAmountsIn[i]);
+
+            if (IERC20(tokensIn[i]).allowance(address(this), pool) > 0) {
+                IERC20(tokensIn[i]).approve(pool, 0);
+            }
+            IERC20(tokensIn[i]).approve(pool, maxAmountsIn[i]);
+
+            unchecked{++i;}
+        }
+
+        IPool(pool).joinPool(poolAmountOut, maxAmountsIn);
+
+        for(uint i; i < tokensIn.length;) {
+            transferAll(tokensIn[i], IERC20(tokensIn[i]).balanceOf(address(this)));
+            unchecked{++i;}
+        }
+
+        IToken(pool).transfer(msg.sender, IToken(pool).balanceOf(address(this)));
+
+    }
+
+    // Join pool without time constraints
+    function unconstrainedjoinswapExternAmountIn(
+        address pool,
+        address tokenIn,
+        uint tokenAmountIn,
+        uint minPoolAmountOut,
+        uint256 deadline
+    ) external
+    _beforeDeadline(deadline)
+    {
+        require(factory.isPool(pool), "ERR_UNREGISTERED_POOL");
+        transferFromAll(tokenIn, tokenAmountIn);
+        IERC20(tokenIn).approve(pool, tokenAmountIn);
+        IPool(pool).joinswapExternAmountInMMM(address(tokenIn), tokenAmountIn, minPoolAmountOut);
+        IToken(pool).transfer(msg.sender, IToken(pool).balanceOf(address(this)));
+    }
+
     function transferFromAll(address token, uint amount) internal {
         if (isNative(token)) {
             IToken(wnative).deposit{value: msg.value}();

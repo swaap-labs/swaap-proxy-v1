@@ -30,7 +30,7 @@ import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 
 contract Pool is PoolToken, EIP712("Swaap Pool Token", "1.0.0") {
 
-    using SafeERC20 for IERC20; 
+    using SafeERC20 for IERC20;
 
     struct Record {
         bool bound;   // is token bound to pool
@@ -108,7 +108,7 @@ contract Pool is PoolToken, EIP712("Swaap Pool Token", "1.0.0") {
     bool private _publicSwap; // true if PUBLIC can call SWAP functions
     uint80 private _totalWeight;
     address private _controller; // has CONTROL role
-    
+
     bool private _finalized;
     address immutable private _factory;    // Factory address to push token exitFee to
     uint8 private priceStatisticsLookbackInRound;
@@ -116,7 +116,7 @@ contract Pool is PoolToken, EIP712("Swaap Pool Token", "1.0.0") {
 
     // `setSwapFee` and `finalize` require CONTROL
     uint256 private _swapFee;
-        
+
     mapping(address=>Price) private _prices;
 
     uint256 private dynamicCoverageFeesHorizon;
@@ -282,13 +282,13 @@ contract Pool is PoolToken, EIP712("Swaap Pool Token", "1.0.0") {
     {
         require(block.timestamp < deadline, "6");
         bytes32 digest = _hashTypedDataV4(keccak256(abi.encode(
-            Const.FUNCTION_HASH,
-            owner,
-            poolAmountOut,
-            maxAmountsIn,
-            deadline,
-            _nonces[owner]
-        )));
+                Const.FUNCTION_HASH,
+                owner,
+                poolAmountOut,
+                maxAmountsIn,
+                deadline,
+                _nonces[owner]
+            )));
 
         digest = ECDSA.toEthSignedMessageHash(digest);
 
@@ -297,7 +297,7 @@ contract Pool is PoolToken, EIP712("Swaap Pool Token", "1.0.0") {
 
         // require(signer != address(0), "35"); already stated in PoolToken._move(address src, address dst, uint256 amt)
 
-        unchecked{++_nonces[owner];}
+    unchecked{++_nonces[owner];}
 
         _joinPool(owner, poolAmountOut, maxAmountsIn);
     }
@@ -314,8 +314,8 @@ contract Pool is PoolToken, EIP712("Swaap Pool Token", "1.0.0") {
         _joinPool(msg.sender, poolAmountOut, maxAmountsIn);
     }
 
-    function _joinPool(address owner, uint256 poolAmountOut, uint256[] calldata maxAmountsIn) 
-    internal     
+    function _joinPool(address owner, uint256 poolAmountOut, uint256[] calldata maxAmountsIn)
+    internal
     _logs_
     _lock_
     _whenNotPaused_{
@@ -334,10 +334,10 @@ contract Pool is PoolToken, EIP712("Swaap Pool Token", "1.0.0") {
             _records[t].balance = _records[t].balance + tokenAmountIn;
             emit LOG_JOIN(owner, t, tokenAmountIn);
             _pullUnderlying(t, msg.sender, tokenAmountIn);
-            unchecked{++i;}
+        unchecked{++i;}
         }
         _mintPoolShare(poolAmountOut);
-        _pushPoolShareAndBlock(owner, poolAmountOut);
+        _pushPoolShare(owner, poolAmountOut);
     }
 
     /**
@@ -372,19 +372,19 @@ contract Pool is PoolToken, EIP712("Swaap Pool Token", "1.0.0") {
             _records[t].balance = _records[t].balance - tokenAmountOut;
             emit LOG_EXIT(msg.sender, t, tokenAmountOut);
             _pushUnderlying(t, msg.sender, tokenAmountOut);
-            unchecked{++i;}
+        unchecked{++i;}
         }
 
     }
 
     function joinswapExternAmountInMMM(address tokenIn, uint tokenAmountIn, uint minPoolAmountOut)
-        external
-        _logs_
-        _lock_
-        _whenNotPaused_
-        returns (uint poolAmountOut)
+    external
+    _logs_
+    _lock_
+    _whenNotPaused_
+    returns (uint poolAmountOut)
 
-    {        
+    {
         require(_finalized, "1");
         require(_records[tokenIn].bound, "2");
 
@@ -424,18 +424,18 @@ contract Pool is PoolToken, EIP712("Swaap Pool Token", "1.0.0") {
         emit LOG_JOIN(msg.sender, tokenIn, tokenAmountIn);
 
         _mintPoolShare(poolAmountOut);
-        _pushPoolShareAndBlock(msg.sender, poolAmountOut);
+        _pushPoolShare(msg.sender, poolAmountOut);
         _pullUnderlying(tokenIn, msg.sender, tokenAmountIn);
 
         return poolAmountOut;
     }
 
     function joinswapPoolAmountOutMMM(address tokenIn, uint poolAmountOut, uint maxAmountIn)
-        external
-        _logs_
-        _lock_
-        _whenNotPaused_
-        returns (uint tokenAmountIn)
+    external
+    _logs_
+    _lock_
+    _whenNotPaused_
+    returns (uint tokenAmountIn)
     {
         require(_finalized, "1");
         require(_records[tokenIn].bound, "2");
@@ -484,18 +484,18 @@ contract Pool is PoolToken, EIP712("Swaap Pool Token", "1.0.0") {
     }
 
     function exitswapPoolAmountInMMM(address tokenOut, uint poolAmountIn, uint minAmountOut)
-        external
-        _logs_
-        _lock_
-        _whenNotPaused_
-        returns (uint tokenAmountOut)
+    external
+    _logs_
+    _lock_
+    _whenNotPaused_
+    returns (uint tokenAmountOut)
     {
         require(_finalized, "1");
         require(_records[tokenOut].bound, "2");
 
         Struct.TokenGlobal memory tokenOutInfo;
         Struct.TokenGlobal[] memory remainingTokensInfo;
-    
+
         (tokenOutInfo, remainingTokensInfo) = _getAllTokensInfo(tokenOut);
 
         {
@@ -522,7 +522,7 @@ contract Pool is PoolToken, EIP712("Swaap Pool Token", "1.0.0") {
         }
 
         require(tokenAmountOut >= minAmountOut, "9");
-        
+
         tokenOutInfo.info.balance -= tokenAmountOut;
         _checkExitSwapPrices(tokenOutInfo, remainingTokensInfo);
         _records[tokenOut].balance = tokenOutInfo.info.balance;
@@ -540,11 +540,11 @@ contract Pool is PoolToken, EIP712("Swaap Pool Token", "1.0.0") {
     }
 
     function exitswapExternAmountOutMMM(address tokenOut, uint tokenAmountOut, uint maxPoolAmountIn)
-        external
-        _logs_
-        _lock_
-        _whenNotPaused_
-        returns (uint poolAmountIn)
+    external
+    _logs_
+    _lock_
+    _whenNotPaused_
+    returns (uint poolAmountIn)
     {
         require(_finalized, "1");
         require(_records[tokenOut].bound, "2");
@@ -621,9 +621,9 @@ contract Pool is PoolToken, EIP712("Swaap Pool Token", "1.0.0") {
     function _pushPoolShareAndBlock(address to, uint256 amount)
     internal
     {
-        unchecked {
-            _blockWaitingTime[to] = block.number + Const.BLOCK_WAITING_TIME;
-        } 
+    unchecked {
+        _blockWaitingTime[to] = block.number + Const.BLOCK_WAITING_TIME;
+    }
         _push(to, amount);
     }
 
@@ -705,10 +705,10 @@ contract Pool is PoolToken, EIP712("Swaap Pool Token", "1.0.0") {
     returns (uint64, uint256, uint8, uint256)
     {
         return (
-            dynamicCoverageFeesZ,
-            dynamicCoverageFeesHorizon,
-            priceStatisticsLookbackInRound,
-            priceStatisticsLookbackInSec
+        dynamicCoverageFeesZ,
+        dynamicCoverageFeesHorizon,
+        priceStatisticsLookbackInRound,
+        priceStatisticsLookbackInSec
         );
     }
 
@@ -745,12 +745,12 @@ contract Pool is PoolToken, EIP712("Swaap Pool Token", "1.0.0") {
         require(_tokens.length < Const.MAX_BOUND_TOKENS, "29");
 
         _records[token] = Record(
-            {
-                bound: true,
-                index: uint8(_tokens.length),
-                denorm: 0,    // balance and denorm will be validated
-                balance: 0   // and set by `rebind`
-            }
+        {
+        bound: true,
+        index: uint8(_tokens.length),
+        denorm: 0,    // balance and denorm will be validated
+        balance: 0   // and set by `rebind`
+        }
         );
         _tokens.push(token);
         _rebindMMM(token, balance, denorm, _priceFeedAddress);
@@ -773,7 +773,7 @@ contract Pool is PoolToken, EIP712("Swaap Pool Token", "1.0.0") {
     }
 
     function _rebindMMM(address token, uint256 balance, uint80 denorm, address _priceFeedAddress)
-    internal 
+    internal
     _logs_
     _lock_
     _whenNotPaused_
@@ -807,10 +807,10 @@ contract Pool is PoolToken, EIP712("Swaap Pool Token", "1.0.0") {
 
         // Add token price
         _prices[token] = Price(
-            {
-                oracle: IAggregatorV3(_priceFeedAddress),
-                initialPrice: 0 // set right below
-            }
+        {
+        oracle: IAggregatorV3(_priceFeedAddress),
+        initialPrice: 0 // set right below
+        }
         );
         _prices[token].initialPrice = _getTokenCurrentPrice(_prices[token].oracle);
         emit LOG_PRICE(token, address(_prices[token].oracle), _prices[token].initialPrice);
@@ -1087,7 +1087,7 @@ contract Pool is PoolToken, EIP712("Swaap Pool Token", "1.0.0") {
     internal view
     returns (Struct.SwapResult memory)
     {
-        
+
         Struct.SwapParameters memory swapParameters = Struct.SwapParameters(
             tokenAmountOut,
             _swapFee,
@@ -1142,7 +1142,7 @@ contract Pool is PoolToken, EIP712("Swaap Pool Token", "1.0.0") {
         (uint80 latestRoundId, int256 latestPrice, , uint256 latestTimestamp,) = price.oracle.latestRoundData();
         Struct.TokenRecord memory info = Struct.TokenRecord(
             record.balance,
-            // we adjust the token's target weight (in value) based on its appreciation since the inception of the pool.
+        // we adjust the token's target weight (in value) based on its appreciation since the inception of the pool.
             Num.bmul(
                 record.denorm,
                 _getTokenPerformance(
@@ -1153,10 +1153,10 @@ contract Pool is PoolToken, EIP712("Swaap Pool Token", "1.0.0") {
         );
         Struct.LatestRound memory latestRound = Struct.LatestRound(address(price.oracle), latestRoundId, latestPrice, latestTimestamp);
         return (
-            tokenGlobal = Struct.TokenGlobal(
-                info,
-                latestRound
-            )
+        tokenGlobal = Struct.TokenGlobal(
+            info,
+            latestRound
+        )
         );
     }
 
@@ -1188,15 +1188,15 @@ contract Pool is PoolToken, EIP712("Swaap Pool Token", "1.0.0") {
 
         uint nRemainingTokens = _tokens.length - 1;
         remainingTokensInfo = new Struct.TokenGlobal[](nRemainingTokens);
-        
+
         // Extracting the remaining un-traded tokens' info
         uint count;
         for (uint i; count < nRemainingTokens;) {
             if (_tokens[i] != swappedToken) {
                 remainingTokensInfo[count] = getTokenLatestInfo(_tokens[i]);
-                unchecked{++count;}
+            unchecked{++count;}
             }
-            unchecked{++i;}
+        unchecked{++i;}
         }
 
     }
@@ -1213,7 +1213,7 @@ contract Pool is PoolToken, EIP712("Swaap Pool Token", "1.0.0") {
         Struct.TokenGlobal memory tokenInInfo,
         Struct.TokenGlobal[] memory remainingTokensInfo
     ) internal view {
-        
+
         uint256 spotPriceAfter;
 
         for (uint256 i; i < remainingTokensInfo.length;)
@@ -1233,7 +1233,7 @@ contract Pool is PoolToken, EIP712("Swaap Pool Token", "1.0.0") {
                 ) <= Const.MAX_PRICE_UNPEG_RATIO,
                 "44"
             );
-            unchecked{++i;}
+        unchecked{++i;}
         }
     }
 
@@ -1249,7 +1249,7 @@ contract Pool is PoolToken, EIP712("Swaap Pool Token", "1.0.0") {
         Struct.TokenGlobal memory tokenOutInfo,
         Struct.TokenGlobal[] memory remainingTokensInfo
     ) internal view {
-        
+
         uint256 spotPriceAfter;
 
         for (uint256 i; i < remainingTokensInfo.length;)
@@ -1269,7 +1269,7 @@ contract Pool is PoolToken, EIP712("Swaap Pool Token", "1.0.0") {
                 ) <= Const.MAX_PRICE_UNPEG_RATIO,
                 "44"
             );
-            unchecked{++i;}
+        unchecked{++i;}
         }
     }
 
