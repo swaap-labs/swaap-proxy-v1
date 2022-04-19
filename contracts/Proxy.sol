@@ -121,12 +121,12 @@ contract Proxy {
             SwapTokenIn.approve(swap.pool, swap.swapAmount);
 
             (uint tokenAmountOut,) = pool.swapExactAmountInMMM(
-                                        tokenIn,
-                                        swap.swapAmount,
-                                        tokenOut,
-                                        swap.limitAmount,
-                                        swap.maxPrice
-                                    );
+                tokenIn,
+                swap.swapAmount,
+                tokenOut,
+                swap.limitAmount,
+                swap.maxPrice
+            );
             
             totalAmountOut += tokenAmountOut;
                 
@@ -181,12 +181,12 @@ contract Proxy {
             SwapTokenIn.approve(swap.pool, swap.limitAmount);
 
             (uint tokenAmountIn,) = pool.swapExactAmountOutMMM(
-                                        tokenIn,
-                                        swap.limitAmount,
-                                        tokenOut,
-                                        swap.swapAmount,
-                                        swap.maxPrice
-                                    );
+                tokenIn,
+                swap.limitAmount,
+                tokenOut,
+                swap.swapAmount,
+                swap.maxPrice
+            );
 
             totalAmountIn += tokenAmountIn;
             unchecked{++i;}
@@ -251,12 +251,12 @@ contract Proxy {
                 }
                 SwapTokenIn.approve(swap.pool, swap.swapAmount);
                 (tokenAmountOut,) = pool.swapExactAmountInMMM(
-                                            swap.tokenIn,
-                                            swap.swapAmount,
-                                            swap.tokenOut,
-                                            swap.limitAmount,
-                                            swap.maxPrice
-                                        );
+                    swap.tokenIn,
+                    swap.swapAmount,
+                    swap.tokenOut,
+                    swap.limitAmount,
+                    swap.maxPrice
+                );
                 unchecked{++j;}
             }
             // This takes the amountOut of the last swap
@@ -320,12 +320,12 @@ contract Proxy {
                 SwapTokenIn.approve(swap.pool, swap.limitAmount);
 
                 (tokenAmountInFirstSwap,) = pool.swapExactAmountOutMMM(
-                                        swap.tokenIn,
-                                        swap.limitAmount,
-                                        swap.tokenOut,
-                                        swap.swapAmount,
-                                        swap.maxPrice
-                                    );
+                    swap.tokenIn,
+                    swap.limitAmount,
+                    swap.tokenOut,
+                    swap.swapAmount,
+                    swap.maxPrice
+                );
             } else {
                 // Consider we are swapping A -> B and B -> C. The goal is to buy a given amount
                 // of token C. But first we need to buy B with A so we can then buy C with B
@@ -336,21 +336,21 @@ contract Proxy {
                 IPool poolSecondSwap = IPool(secondSwap.pool);
                 IPool poolFirstSwap = IPool(firstSwap.pool);
                 (Struct.SwapResult memory secondSwapResult, ) = poolSecondSwap.getAmountInGivenOutMMM(
-                                                                                                        secondSwap.tokenIn,
-                                                                                                        secondSwap.limitAmount,
-                                                                                                        secondSwap.tokenOut,
-                                                                                                        secondSwap.swapAmount,
-                                                                                                        secondSwap.maxPrice
-                                                                                                    );
+                    secondSwap.tokenIn,
+                    secondSwap.limitAmount,
+                    secondSwap.tokenOut,
+                    secondSwap.swapAmount,
+                    secondSwap.maxPrice
+                );
                 // This would be token B as described above
                 uint intermediateTokenAmount = secondSwapResult.amount;
                 (Struct.SwapResult memory firstSwapResult, ) = poolFirstSwap.getAmountInGivenOutMMM(
-                                                                                                        firstSwap.tokenIn,
-                                                                                                        firstSwap.limitAmount,
-                                                                                                        firstSwap.tokenOut,
-                                                                                                        intermediateTokenAmount,
-                                                                                                        firstSwap.maxPrice
-                                                                                                    );
+                    firstSwap.tokenIn,
+                    firstSwap.limitAmount,
+                    firstSwap.tokenOut,
+                    intermediateTokenAmount,
+                    firstSwap.maxPrice
+                );
                 tokenAmountInFirstSwap = firstSwapResult.amount;
                 require(tokenAmountInFirstSwap <= firstSwap.limitAmount, "ERR_LIMIT_IN");
 
@@ -362,12 +362,12 @@ contract Proxy {
                 }
                 FirstSwapTokenIn.approve(firstSwap.pool, tokenAmountInFirstSwap);
                 poolFirstSwap.swapExactAmountOutMMM(
-                                        firstSwap.tokenIn,
-                                        tokenAmountInFirstSwap,
-                                        firstSwap.tokenOut,
-                                        intermediateTokenAmount, // This is the amount of token B we need
-                                        firstSwap.maxPrice
-                                    );
+                    firstSwap.tokenIn,
+                    tokenAmountInFirstSwap,
+                    firstSwap.tokenOut,
+                    intermediateTokenAmount, // This is the amount of token B we need
+                    firstSwap.maxPrice
+                );
 
                 //// Buy the final amount of token C desired
                 IToken SecondSwapTokenIn = IToken(secondSwap.tokenIn);
@@ -376,14 +376,13 @@ contract Proxy {
                 }
                     SecondSwapTokenIn.approve(secondSwap.pool, intermediateTokenAmount);
 
-
                 poolSecondSwap.swapExactAmountOutMMM(
-                                        secondSwap.tokenIn,
-                                        intermediateTokenAmount,
-                                        secondSwap.tokenOut,
-                                        secondSwap.swapAmount,
-                                        secondSwap.maxPrice
-                                    );
+                    secondSwap.tokenIn,
+                    intermediateTokenAmount,
+                    secondSwap.tokenOut,
+                    secondSwap.swapAmount,
+                    secondSwap.maxPrice
+                );
             }
             totalAmountIn += tokenAmountInFirstSwap;
             unchecked{++i;}
