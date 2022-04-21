@@ -572,12 +572,14 @@ contract Proxy {
         uint256 deadline
     ) external
     _beforeDeadline(deadline)
+    returns (uint256 poolAMountOut)
     {
         require(factory.isPool(pool), "ERR_UNREGISTERED_POOL");
         transferFromAll(tokenIn, tokenAmountIn);
         IERC20(tokenIn).approve(pool, tokenAmountIn);
-        IPool(pool).joinswapExternAmountInMMM(address(tokenIn), tokenAmountIn, minPoolAmountOut);
+        poolAMountOut = IPool(pool).joinswapExternAmountInMMM(address(tokenIn), tokenAmountIn, minPoolAmountOut);
         IToken(pool).transfer(msg.sender, IToken(pool).balanceOf(address(this)));
+        return poolAMountOut;
     }
 
     function transferFromAll(address token, uint amount) internal {
