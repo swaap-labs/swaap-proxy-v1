@@ -6,7 +6,6 @@ const TToken = artifacts.require('TToken');
 const TPriceConsumerV3 = artifacts.require('TPriceConsumerV3');
 const Decimal = require('decimal.js');
 const { createBalancedPool } = require('./lib/createBalancedPool');
-const { _hashTypedDataV4 } = require('./lib/buildDomainSeparator');
 
 contract('Proxy - BatchSwap', async (accounts) => {
     
@@ -234,7 +233,7 @@ contract('Proxy - BatchSwap', async (accounts) => {
         await proxy.multihopBatchSwapExactOut(multihops, WETH, WBTC, toWei('30'), MAX, {from: ttrader});
 
         // Trading using directly pools' interface
-        let intermediateDai = await cpool1.getAmountInGivenOutMMM.call(DAI, MAX, WBTC, toWei('1'), MAX, {from: ctrader});
+        let intermediateDai = await cpool1.getAmountInGivenOutMMM.call(DAI, MAX, WBTC, toWei('1'), MAX, {from: ctrader});    
         intermediateDai = (intermediateDai.swapResult.amount).toString();        
 
         await cpool2.swapExactAmountOutMMM(WETH, toWei('20'), DAI, intermediateDai, MAX, {from: ctrader});
@@ -289,21 +288,6 @@ contract('Proxy - BatchSwap', async (accounts) => {
         
         let poolTokenBalance = (await pool5.balanceOf.call(ttrader)).toString();
         assert.equal(poolTokenBalance, toWei('100'));
-        await assertProxyBalances();
-    });
-
-    it('Join a pool using proxy', async () => {
-        // signature, maxAmountsIn[], owner, poolAmoutOut, deadline
-        let maxAmountsIn = [toWei('2'), toWei('3500'), toWei('0.25')];
-        let nonce = await pool5.getNonce.call(ttrader);
-        let deadline = MAX;
-        let poolAmountOut = toWei('100');
-        let owner = ttrader;
-        // inputs: pool address, owner, poolAmountOut, maxAmountsIn, deadline, owner's nonce
-        let hashTypedData = await _hashTypedDataV4(pool5.address, owner, poolAmountOut, maxAmountsIn, deadline, nonce);
-        let signature = await web3.eth.sign(hashTypedData, owner);
-        await proxy.joinPool(pool5.address, signature, maxAmountsIn, owner, poolAmountOut, deadline, {from: owner});
-        assert.equal((await pool5.balanceOf.call(owner)).toString(), toWei('200'));
         await assertProxyBalances();
     });
 

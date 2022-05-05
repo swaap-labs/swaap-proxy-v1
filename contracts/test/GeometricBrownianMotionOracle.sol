@@ -14,10 +14,10 @@
 
 pragma solidity =0.8.12;
 
-import "./interfaces/IAggregatorV3.sol";
 import "./Num.sol";
 import "./Const.sol";
 import "./LogExpMath.sol";
+import "./ChainlinkUtils.sol";
 import "./structs/Struct.sol";
 
 
@@ -43,14 +43,14 @@ library GeometricBrownianMotionOracle {
         Struct.HistoricalPricesParameters memory hpParameters
     )
     external view returns (Struct.GBMEstimation memory gbmEstimation) {
-        Struct.LatestRound memory latestRoundIn = getLatestRound(oracleIn);
-        Struct.LatestRound memory latestRoundOut = getLatestRound(oracleOut);
+        Struct.LatestRound memory latestRoundIn = ChainlinkUtils.getLatestRound(oracleIn);
+        Struct.LatestRound memory latestRoundOut = ChainlinkUtils.getLatestRound(oracleOut);
         return (
-        getParametersEstimation(
-            latestRoundIn,
-            latestRoundOut,
-            hpParameters
-        )
+            getParametersEstimation(
+                latestRoundIn,
+                latestRoundOut,
+                hpParameters
+            )
         );
     }
 
@@ -99,6 +99,7 @@ library GeometricBrownianMotionOracle {
 
     /**
     * @notice Gets asset-pair historical data return's mean and variance
+    * @param noMoreDataPoints True if and only if the retrieved data span over the whole time window of interest
     * @param hpDataIn Historical prices data of tokenIn
     * @param hpDataOut Historical prices data of tokenOut
     * @param hpParameters The parameters for historical prices retrieval
@@ -235,7 +236,7 @@ library GeometricBrownianMotionOracle {
         }
         variance = Num.bdivInt256(variance, int256(n * Const.BONE));
 
-        return (mean, uint256(Num.abs(variance)));
+        return (mean, uint256(Num.positivePart(variance)));
     }
 
     /**
@@ -308,11 +309,10 @@ library GeometricBrownianMotionOracle {
     /**
     * @notice Gets historical prices from a Chainlink data feed
     * @dev Few specificities:
-    * - if the returned index = hpParameters.lookbackInRound it means "no historical data was found"
-    * - if stops filling the prices/timestamps when:
-    * a) round data are 0 or when
-    * b) hpParameters.lookbackInRound rounds have already been found
-    * c) time window induced by hpParameters.lookbackInRound is no more satisfied
+    * - it filters out round data with null price or timestamp
+    * - it stops filling the prices/timestamps when:
+    * a) hpParameters.lookbackInRound rounds have already been found
+    * b) time window induced by hpParameters.lookbackInSec is no more satisfied
     * @param latestRound The round-to-start-from's data including its ID
     * @param hpParameters The parameters for historical prices retrieval
     * @return The historical prices
@@ -326,10 +326,6 @@ library GeometricBrownianMotionOracle {
     )
     internal view returns (uint256[] memory, uint256[] memory, uint256, bool)
     {
-        IAggregatorV3 priceFeed = IAggregatorV3(latestRound.oracle);
-
-        uint80 latestRoundId = latestRound.roundId;
-        int256 latestPrice = latestRound.price;
         uint256 latestTimestamp = latestRound.timestamp;
 
         // historical price endtimestamp >= lookback window or it reverts
@@ -342,7 +338,7 @@ library GeometricBrownianMotionOracle {
 
         {
 
-            prices[0] = uint256(latestPrice); // is supposed to be well valid
+            prices[0] = uint256(latestRound.price); // is supposed to be well valid
             timestamps[0] = latestTimestamp; // is supposed to be well valid
 
             if (latestTimestamp < timeLimit) {
@@ -352,12 +348,12 @@ library GeometricBrownianMotionOracle {
             uint80 count = 1;
 
             // buffer variables
-            uint80 _roundId = latestRoundId;
+            uint80 _roundId = latestRound.roundId;
 
             while ((_roundId > 0) && (count < hpParameters.lookbackInRound)) {
 
                 _roundId--;
-                (int256 _price, uint256 _timestamp) = getRoundData(priceFeed, _roundId);
+                (int256 _price, uint256 _timestamp) = ChainlinkUtils.getRoundData(latestRound.oracle, _roundId);
 
                 if (_price > 0 && _timestamp > 0) {
 
@@ -403,37 +399,6 @@ library GeometricBrownianMotionOracle {
             }
         }
 
-    }
-
-    /**
-    * @notice Retrieves historical data from round id.
-    * @dev Will not fail and return (0, 0) if no data can be found.
-    * @param priceFeed The oracle of interest
-    * @param _roundId The the round of interest ID
-    * @return The round price
-    * @return The round timestamp
-    */
-    function getRoundData(IAggregatorV3 priceFeed, uint80 _roundId) internal view returns (int256, uint256) {
-        try priceFeed.getRoundData(_roundId) returns (
-            uint80 ,
-            int256 _price,
-            uint256 ,
-            uint256 _timestamp,
-            uint80
-        ) {
-            return (_price, _timestamp);
-        } catch {}
-        return (0, 0);
-    }
-
-    function getLatestRound(address oracle) internal view returns (Struct.LatestRound memory) {
-        (uint80 latestRoundId, int256 latestPrice, , uint256 latestTimestamp,) = IAggregatorV3(oracle).latestRoundData();
-        return Struct.LatestRound(
-            oracle,
-            latestRoundId,
-            latestPrice,
-            latestTimestamp
-        );
     }
 
 }

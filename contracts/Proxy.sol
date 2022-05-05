@@ -486,41 +486,8 @@ contract Proxy {
         IPool(pool).setController(msg.sender);
     }
 
-    // Join pool
-    function joinPool(
-        IPool pool,
-        bytes calldata signature,
-        uint256[] calldata maxAmountsIn,
-        address owner,
-        uint256 poolAmountOut,
-        uint256 deadline
-    )
-    external {
-
-        address[] memory tokensIn = pool.getTokens();
-
-        for(uint i; i < tokensIn.length;) {
-            transferFromAll(tokensIn[i], maxAmountsIn[i]);
-       
-            if (IERC20(tokensIn[i]).allowance(address(this), address(pool)) > 0) {
-                IERC20(tokensIn[i]).approve(address(pool), 0);
-            }
-            IERC20(tokensIn[i]).approve(address(pool), maxAmountsIn[i]);
-
-            unchecked{++i;}
-        }
-
-        pool.permitJoinPool(signature, maxAmountsIn, owner, poolAmountOut, deadline);
-
-        for(uint i; i < tokensIn.length;) {
-            transferAll(tokensIn[i], IERC20(tokensIn[i]).balanceOf(address(this)));
-            unchecked{++i;}
-        }
-
-    }
-
     // Join pool without time constraints
-    function unconstrainedjoinPool(
+    function joinPool(
         address pool,
         uint256[] calldata maxAmountsIn,
         uint256 poolAmountOut,
@@ -555,7 +522,7 @@ contract Proxy {
     }
 
     // Join pool without time constraints
-    function unconstrainedjoinswapExternAmountIn(
+    function joinswapExternAmountIn(
         address pool,
         address tokenIn,
         uint tokenAmountIn,
@@ -563,13 +530,20 @@ contract Proxy {
         uint256 deadline
     ) external
     _beforeDeadline(deadline)
-    returns (uint256 poolAMountOut)
+    returns (uint256 poolAmountOut)
     {
         transferFromAll(tokenIn, tokenAmountIn);
+        
+        if (IERC20(tokenIn).allowance(address(this), pool) > 0) {
+            IERC20(tokenIn).approve(pool, 0);
+        }
         IERC20(tokenIn).approve(pool, tokenAmountIn);
-        poolAMountOut = IPool(pool).joinswapExternAmountInMMM(address(tokenIn), tokenAmountIn, minPoolAmountOut);
+
+        poolAmountOut = IPool(pool).joinswapExternAmountInMMM(address(tokenIn), tokenAmountIn, minPoolAmountOut);
+        
         IToken(pool).transfer(msg.sender, IToken(pool).balanceOf(address(this)));
-        return poolAMountOut;
+        
+        return poolAmountOut;
     }
 
     function transferFromAll(address token, uint amount) internal {
