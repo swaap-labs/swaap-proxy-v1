@@ -16,5 +16,4 @@ pragma solidity 0.8.12;
 
 interface IFactory {
     function newPool() external returns (address);
-    function isPool(address) external returns (bool);
 }

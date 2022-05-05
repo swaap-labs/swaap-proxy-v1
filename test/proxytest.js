@@ -67,7 +67,7 @@ contract('Proxy - BatchSwap', async (accounts) => {
 
     before(async () => {        
         factory = await Factory.deployed();
-        proxy = await Proxy.new(factory.address, wnative);
+        proxy = await Proxy.new(wnative);
     
         await Promise.all([
             TToken.new('Wrapped Ether', 'WETH', 18),
@@ -271,8 +271,8 @@ contract('Proxy - BatchSwap', async (accounts) => {
 
         let bindTokens = [bindToken1, bindToken2, bindToken3];
         // inputs: bindTokens[], finalize, deadline
-        let POOL5 = await proxy.createPool.call(bindTokens, true, MAX, {from: ttrader}); 
-        await proxy.createPool(bindTokens, true, MAX, {from: ttrader}); 
+        let POOL5 = await proxy.createPool.call(bindTokens, factory.address, true, MAX, {from: ttrader}); 
+        await proxy.createPool(bindTokens, factory.address, true, MAX, {from: ttrader}); 
         
         pool5 = await Pool.at(POOL5);
 
@@ -324,8 +324,8 @@ contract('Proxy - BatchSwap', async (accounts) => {
 
         let bindTokens = [bindToken1, bindToken2, bindToken3];
         // inputs: bindTokens[], finalize, deadline
-        let POOL6 = await proxy.createPoolWithParams.call(bindTokens, params,  false, MAX, {from: ttrader}); 
-        await proxy.createPoolWithParams(bindTokens, params, false, MAX, {from: ttrader}); 
+        let POOL6 = await proxy.createPoolWithParams.call(bindTokens, params, factory.address,  false, MAX, {from: ttrader}); 
+        await proxy.createPoolWithParams(bindTokens, params, factory.address, false, MAX, {from: ttrader}); 
         
         let pool6 = await Pool.at(POOL6);
 

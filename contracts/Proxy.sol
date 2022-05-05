@@ -68,12 +68,10 @@ contract Proxy {
         _;
     }
 
-    IFactory immutable private factory;
     address immutable private wnative;
     address constant private nativeAddress = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
-    constructor(address _factory, address _wnative) {
-        factory = IFactory(_factory);
+    constructor(address _wnative) {
         wnative = _wnative;
     }
 
@@ -104,8 +102,6 @@ contract Proxy {
 
         for (uint i; i < swaps.length;) {
             Swap memory swap = swaps[i];
-
-            require(factory.isPool(swap.pool), "ERR_UNREGISTERED_POOL");
 
             IERC20 SwapTokenIn = IERC20(tokenIn);
             IPool pool = IPool(swap.pool);
@@ -164,8 +160,6 @@ contract Proxy {
 
         for (uint i; i < swaps.length;) {
             Swap memory swap = swaps[i];
-
-            require(factory.isPool(swap.pool), "ERR_UNREGISTERED_POOL");
 
             IERC20 SwapTokenIn = IERC20(tokenIn);
             IPool pool = IPool(swap.pool);
@@ -237,7 +231,6 @@ contract Proxy {
             uint tokenAmountOut;
             for (uint j; j < swapSequences[i].length;) {
                 Swap memory swap = swapSequences[i][j];
-                require(factory.isPool(swap.pool), "ERR_UNREGISTERED_POOL");
 
                 IToken SwapTokenIn = IToken(swap.tokenIn);
                 if (j >= 1) {
@@ -310,7 +303,6 @@ contract Proxy {
 
             if (swapSequences[i].length == 1) {
                 Swap memory swap = swapSequences[i][0];
-                require(factory.isPool(swap.pool), "ERR_UNREGISTERED_POOL");
                 IToken SwapTokenIn = IToken(swap.tokenIn);
 
                 IPool pool = IPool(swap.pool);
@@ -332,7 +324,7 @@ contract Proxy {
                 // To get the exact amount of C we then first need to calculate how much B we'll need:
                 Swap memory firstSwap = swapSequences[i][0];
                 Swap memory secondSwap = swapSequences[i][1];
-                require(factory.isPool(secondSwap.pool), "ERR_UNREGISTERED_POOL");
+
                 IPool poolSecondSwap = IPool(secondSwap.pool);
                 IPool poolFirstSwap = IPool(firstSwap.pool);
                 (Struct.SwapResult memory secondSwapResult, ) = poolSecondSwap.getAmountInGivenOutMMM(
@@ -355,7 +347,6 @@ contract Proxy {
                 require(tokenAmountInFirstSwap <= firstSwap.limitAmount, "ERR_LIMIT_IN");
 
                 //// Buy intermediateTokenAmount of token B with A in the first pool
-                require(factory.isPool(firstSwap.pool), "ERR_UNREGISTERED_POOL");
                 IToken FirstSwapTokenIn = IToken(firstSwap.tokenIn);
                 if (FirstSwapTokenIn.allowance(address(this), firstSwap.pool) > 0) {
                     FirstSwapTokenIn.approve(firstSwap.pool, 0);
@@ -405,6 +396,7 @@ contract Proxy {
     function createPoolWithParams(
 	    BindToken[] calldata bindTokens,
         Params calldata params,
+        IFactory factory,
         bool finalize,
         uint deadline
     ) 
@@ -434,6 +426,7 @@ contract Proxy {
     */
     function createPool(
 	    BindToken[] calldata bindTokens,
+        IFactory factory,
         bool finalize,
         uint deadline
     ) 
@@ -504,7 +497,6 @@ contract Proxy {
     )
     external {
 
-        require(factory.isPool(address(pool)), "ERR_UNREGISTERED_POOL");
         address[] memory tokensIn = pool.getTokens();
 
         for(uint i; i < tokensIn.length;) {
@@ -538,7 +530,6 @@ contract Proxy {
     _beforeDeadline(deadline)
     {
 
-        require(factory.isPool(pool), "ERR_UNREGISTERED_POOL");
         address[] memory tokensIn = IPool(pool).getTokens();
 
         for(uint i; i < tokensIn.length;) {
@@ -574,7 +565,6 @@ contract Proxy {
     _beforeDeadline(deadline)
     returns (uint256 poolAMountOut)
     {
-        require(factory.isPool(pool), "ERR_UNREGISTERED_POOL");
         transferFromAll(tokenIn, tokenAmountIn);
         IERC20(tokenIn).approve(pool, tokenAmountIn);
         poolAMountOut = IPool(pool).joinswapExternAmountInMMM(address(tokenIn), tokenAmountIn, minPoolAmountOut);
