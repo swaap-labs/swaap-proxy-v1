@@ -69,7 +69,7 @@ contract Proxy {
     }
 
     address immutable private wnative;
-    address constant private nativeAddress = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address constant private NATIVE_ADDRESS = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
 
     constructor(address _wnative) {
         wnative = _wnative;
@@ -103,7 +103,7 @@ contract Proxy {
         for (uint i; i < swaps.length;) {
             Swap memory swap = swaps[i];
 
-            IERC20 SwapTokenIn = IERC20(tokenIn);
+            IERC20 SwapTokenIn = IERC20(swap.tokenIn);
             IPool pool = IPool(swap.pool);
 
             // required for some ERC20 such as USDT before changing the allowed transferable tokens
@@ -117,9 +117,9 @@ contract Proxy {
             SwapTokenIn.approve(swap.pool, swap.swapAmount);
 
             (uint tokenAmountOut,) = pool.swapExactAmountInMMM(
-                tokenIn,
+                swap.tokenIn,
                 swap.swapAmount,
-                tokenOut,
+                swap.tokenOut,
                 swap.limitAmount,
                 swap.maxPrice
             );
@@ -161,7 +161,7 @@ contract Proxy {
         for (uint i; i < swaps.length;) {
             Swap memory swap = swaps[i];
 
-            IERC20 SwapTokenIn = IERC20(tokenIn);
+            IERC20 SwapTokenIn = IERC20(swap.tokenIn);
             IPool pool = IPool(swap.pool);
 
             // required for some ERC20 such as USDT before changing the allowed transferable tokens
@@ -175,9 +175,9 @@ contract Proxy {
             SwapTokenIn.approve(swap.pool, swap.limitAmount);
 
             (uint tokenAmountIn,) = pool.swapExactAmountOutMMM(
-                tokenIn,
+                swap.tokenIn,
                 swap.limitAmount,
-                tokenOut,
+                swap.tokenOut,
                 swap.swapAmount,
                 swap.maxPrice
             );
@@ -467,6 +467,8 @@ contract Proxy {
             
             IPool(pool).bindMMM(tokenIn, bindToken.balance, bindToken.weight, bindToken.oracle);
             
+            transferAll(bindToken.token, getBalance(bindToken.token));
+
             unchecked{++i;}
         }
 
@@ -575,7 +577,7 @@ contract Proxy {
     }
 
     function isNative(address token) internal pure returns(bool) {
-        return (token == nativeAddress);
+        return (token == NATIVE_ADDRESS);
     }
 
     receive() external payable{}

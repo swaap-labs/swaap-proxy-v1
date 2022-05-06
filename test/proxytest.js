@@ -11,6 +11,8 @@ contract('Proxy - BatchSwap', async (accounts) => {
     
     let network = 'ethereum';
     let wnative = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'; // weth on ethereum
+    const NATIVE_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
+    let wnative_contract;
 
     const admin = accounts[0];
     const ttrader = accounts[1]; // test trader that will trade using the proxy
@@ -68,6 +70,8 @@ contract('Proxy - BatchSwap', async (accounts) => {
         factory = await Factory.deployed();
         proxy = await Proxy.new(wnative);
     
+        wnative_contract = await TToken.at(wnative);
+
         await Promise.all([
             TToken.new('Wrapped Ether', 'WETH', 18),
             TToken.new('Dai Stablecoin', 'DAI', 18),
@@ -127,7 +131,7 @@ contract('Proxy - BatchSwap', async (accounts) => {
         console.log("Tokens approved");
 
     });
-
+    
     it('Fails when exceeding deadline', async () => {
         // Trading using proxy
         // swap = [pool, tokenIn, tokenOut, amountIn, minAmountOut, maxPrice]
@@ -260,7 +264,7 @@ contract('Proxy - BatchSwap', async (accounts) => {
         DAIAggregatorAddress = '0x4746DeC9e833A82EC7C2C1356 372CcF2cfcD2F3D';
         BTCAggregatorAddress = '0xc907E116054Ad103354f2D350FD2514433D57F6f';
     }
-
+    
     let pool5;
     it('Create & finalize a pool without any parameter', async () => {
         // bindToken = [tokenAddress, balance, weight, oracleAddress]
@@ -336,5 +340,120 @@ contract('Proxy - BatchSwap', async (accounts) => {
 
         await assertProxyBalances();
     });
+
+    let tpool7;
+    it('Create & finalize a pool using native token', async () => {
+        // bindToken = [tokenAddress, balance, weight, oracleAddress]
+        let bindToken1 = [NATIVE_ADDRESS, toWei('2'), toWei('5'), ETHAggregatorAddress];
+        let bindToken2 = [DAI, toWei('100000'), toWei('5'), DAIAggregatorAddress];
+        let bindToken3 = [WBTC, toWei('5'), toWei('6'), BTCAggregatorAddress];
+
+        let bindTokens = [bindToken1, bindToken2, bindToken3];
+        // inputs: bindTokens[], finalize, deadline
+        let POOL7 = await proxy.createPool.call(bindTokens, factory.address, true, MAX, {from: ttrader, value: toWei('20')}); 
+        await proxy.createPool(bindTokens, factory.address, true, MAX, {from: ttrader, value: toWei('20')}); 
+        
+        tpool7 = await Pool.at(POOL7);
+
+        // assert creation of pool and bound tokens
+        assert.equal((await factory.isPool.call(POOL7)).toString(), 'true');
+        assert.equal((await tpool7.isBound(wnative)).toString(), 'true');
+        assert.equal((await tpool7.isBound(DAI)).toString(), 'true');
+        assert.equal((await tpool7.isBound(WBTC)).toString(), 'true');
+        // assert bound tokens parameters
+        assert.equal((await wnative_contract.balanceOf.call(POOL7)).toString(), toWei('2'));
+        
+        let poolTokenBalance = (await tpool7.balanceOf.call(ttrader)).toString();
+        assert.equal(poolTokenBalance, toWei('100'));
+        let nativeBalance = await web3.eth.getBalance(proxy.address);
+        assert.equal(nativeBalance, 0);
+        let wbtcBalance = await wbtc.balanceOf.call(proxy.address);
+        assert.equal(wbtcBalance, 0);
+    });
+
+    it('BatchSwapIn with native token', async () => {
+        // Trading using proxy
+        // swap = [pool, tokenIn, tokenOut, amountIn, minAmountOut, maxPrice]
+        // On a real trade 'minAmountOut' and 'maxPrice' should be well calibrated
+        let swap1 = [tpool7.address, wnative, DAI, toWei('0.1'), toWei('100'), MAX];
+        let swap2 = [tpool7.address, wnative, DAI, toWei('0.05'), toWei('50'), MAX];
+        let swap3 = [tpool7.address, wnative, DAI, toWei('0.025'), toWei('25'), MAX];
+
+        let batchSwap = [swap1, swap2, swap3];
+
+        // batchSwapExactIn(swaps[], tokenIn, tokenOut, totalAmountIn(= sum of tokenIn), minTotalAmountOut, deadline)
+        await proxy.batchSwapExactIn(batchSwap, NATIVE_ADDRESS, DAI, toWei('0.180'), toWei('175'), MAX, { from: ttrader, value: toWei('0.275') });
+
+        assert.equal((await wnative_contract.balanceOf.call(tpool7.address)).toString(), toWei('2.175'));        
+        let nativeBalance = await web3.eth.getBalance(proxy.address);
+        assert.equal(nativeBalance, 0);
+    });
+
+    it('multihopBatchSwapExactIn with native token', async () => {
+        // Trading using proxy
+        // swap = [pool, tokenIn, tokenOut, amountIn, minAmountOut, maxPrice]
+        // On a real trade 'minAmountOut' and 'maxPrice' should be well calibrated
+        let swap1 = [tpool7.address, wnative, DAI, toWei('0.5'), toWei('0.0001'), MAX];
+        // For swap2, amountIn is irrelevant since all of the DAI received in swap1 will be used in swap2
+        let swap2 = [tpool2.address, DAI, WBTC, toWei('0'), toWei('0.0001'), MAX];
+        // WBTC --> DAI --> WETH
+        let multihop1 = [swap1, swap2];
+        // WBTC --> WETH
+        let swap3 = [tpool7.address, wnative, WBTC, toWei('0.5'), toWei('0.0001'), MAX];
+        let multihops = [multihop1, [swap3]];
+        // inputs = [swapSequances[][], tokenIn, tokenOut, totalAmountIn, minTotalAmountOut, deadline]
+        await proxy.multihopBatchSwapExactIn(multihops, NATIVE_ADDRESS, WBTC, toWei('1'), toWei('0.002'), MAX, {from: ttrader, value: toWei('5')});
+
+        
+        assert.equal((await wnative_contract.balanceOf.call(tpool7.address)).toString(), toWei('3.175'));        
+        let nativeBalance = await web3.eth.getBalance(proxy.address);
+        assert.equal(nativeBalance, 0);
+
+      });
+
+      let pool_native_balance;
+      it('BatchSwapOut with native token', async () => {
+        // Trading using proxy
+        // swap = [pool, tokenIn, tokenOut, amountOut, maxAmountIn maxPrice]
+        // On a real trade 'maxAmountOut' and 'maxPrice' should be well calibrated
+        let swap1 = [tpool7.address, wnative, DAI, toWei('1000'), toWei('10000'), MAX];
+        let swap2 = [tpool7.address, wnative, DAI, toWei('500'), toWei('5000'), MAX];
+
+        let batchSwap = [swap1, swap2];
+        // batchSwapExactOut(swaps[], tokenIn, tokenOut, maxTotalAmountIn, deadline)
+        await proxy.batchSwapExactOut(batchSwap, NATIVE_ADDRESS, DAI, toWei('1500'), MAX, { from: ttrader, value: toWei('1') });
+
+        pool_native_balance = Number(fromWei(await wnative_contract.balanceOf.call(tpool7.address)));
+
+        assert.isAtLeast(pool_native_balance, 3.175);
+
+        let nativeBalance = await web3.eth.getBalance(proxy.address);
+        assert.equal(nativeBalance, 0);
+    });
+
+
+    it('multihopBatchSwapExactOut with native token', async () => {
+        // Trading using proxy 
+        // swap = [pool, tokenIn, tokenOut, amountOut, maxAmountIn, maxPrice]
+        // On a real trade 'maxAmountIn' and 'maxPrice' should be well calibrated
+        // For swap1, amountOut is irrelevant since it will be calculated on-chain and depends on amountOut of swap2
+        let swap1 = [tpool7.address, wnative, WBTC, toWei('0'), toWei('1'), MAX];
+        // swap = [pool, tokenIn, tokenOut, amountOut, maxAmountIn, maxPrice]
+        let swap2 = [tpool2.address, WBTC, DAI, toWei('1000'), toWei('1'), MAX];
+        // wnative --> WBTC --> DAI
+        let multihop1 = [swap1, swap2];
+        // wnative --> DAI
+        let swap3 = [tpool7.address, wnative, DAI, toWei('500'), toWei('0.5'), MAX];
+        let multihops = [multihop1, [swap3]];
+        // inputs = [swapSequances[][], tokenIn, tokenOut, maxAmountIn, deadline] 
+        // totalAmountOut is determined by swap2 && swap3 --> 1.5 WBTC
+        await proxy.multihopBatchSwapExactOut(multihops, NATIVE_ADDRESS, WBTC, toWei('1.5'), MAX, {from: ttrader, value: toWei('1.5')});
+
+        assert.isAtLeast(Number(fromWei(await wnative_contract.balanceOf.call(tpool7.address))), pool_native_balance);
+
+        let nativeBalance = await web3.eth.getBalance(proxy.address);
+        assert.equal(nativeBalance, 0);
+
+      });
 
 });
