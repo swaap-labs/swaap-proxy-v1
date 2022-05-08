@@ -268,7 +268,7 @@ contract('Proxy - BatchSwap', async (accounts) => {
     let pool5;
     it('Create & finalize a pool without any parameter', async () => {
         // bindToken = [tokenAddress, balance, weight, oracleAddress]
-        let bindToken1 = [WETH, toWei('2'), toWei('5'), ETHAggregatorAddress];
+        let bindToken1 = [WETH, toWei('2'), toWei('20'), ETHAggregatorAddress];
         let bindToken2 = [DAI, toWei('3500'), toWei('2.5'), DAIAggregatorAddress];
         let bindToken3 = [WBTC, toWei('0.25'), toWei('6'), BTCAggregatorAddress];
 
@@ -285,7 +285,7 @@ contract('Proxy - BatchSwap', async (accounts) => {
         assert.equal((await pool5.isBound(DAI)).toString(), 'true');
         assert.equal((await pool5.isBound(WBTC)).toString(), 'true');
         // assert bound tokens parameters
-        assert.equal((await pool5.getDenormalizedWeight.call(WETH)).toString(), toWei('5'));
+        assert.equal((await pool5.getDenormalizedWeight.call(WETH)).toString(), toWei('20'));
         assert.equal((await dai.balanceOf.call(POOL5)).toString(), toWei('3500'));
         assert.equal((await pool5.getTokenPriceOracle.call(WBTC)).toString(), BTCAggregatorAddress);
 
@@ -293,6 +293,19 @@ contract('Proxy - BatchSwap', async (accounts) => {
         let poolTokenBalance = (await pool5.balanceOf.call(ttrader)).toString();
         assert.equal(poolTokenBalance, toWei('100'));
         await assertProxyBalances();
+    });
+
+    it('joinPool', async () => {
+        let maxAmountsIn = [toWei('2'), toWei('3500'), toWei('0.25')];
+        await proxy.joinPool(pool5.address, toWei('100'), maxAmountsIn, MAX, {from: ttrader});
+        let poolTokenBalance = (await pool5.balanceOf.call(ttrader)).toString();
+        assert.equal(poolTokenBalance, toWei('200'));
+    });
+
+    it('joinswapExternAmountIn', async () => {
+        await proxy.joinswapExternAmountIn(pool5.address, WETH, toWei('0.5'), toWei('0.01'), MAX, {from: ttrader});
+        let poolWETHBalance = (await weth.balanceOf.call(pool5.address)).toString();
+        assert.equal(poolWETHBalance, toWei('4.5'));
     });
 
     it('Create a pool with parameters & without finalizing', async () => {
@@ -365,10 +378,9 @@ contract('Proxy - BatchSwap', async (accounts) => {
         
         let poolTokenBalance = (await tpool7.balanceOf.call(ttrader)).toString();
         assert.equal(poolTokenBalance, toWei('100'));
-        let nativeBalance = await web3.eth.getBalance(proxy.address);
-        assert.equal(nativeBalance, 0);
-        let wbtcBalance = await wbtc.balanceOf.call(proxy.address);
-        assert.equal(wbtcBalance, 0);
+        assert.equal(await web3.eth.getBalance(proxy.address), 0);
+        assert.equal(await wnative_contract.balanceOf.call(proxy.address), 0);
+        assert.equal(await wbtc.balanceOf.call(proxy.address), 0);
     });
 
     it('BatchSwapIn with native token', async () => {
@@ -425,7 +437,7 @@ contract('Proxy - BatchSwap', async (accounts) => {
 
         pool_native_balance = Number(fromWei(await wnative_contract.balanceOf.call(tpool7.address)));
 
-        assert.isAtLeast(pool_native_balance, 3.175);
+        assert.isAbove(pool_native_balance, 3.175);
 
         let nativeBalance = await web3.eth.getBalance(proxy.address);
         assert.equal(nativeBalance, 0);
@@ -449,11 +461,32 @@ contract('Proxy - BatchSwap', async (accounts) => {
         // totalAmountOut is determined by swap2 && swap3 --> 1.5 WBTC
         await proxy.multihopBatchSwapExactOut(multihops, NATIVE_ADDRESS, WBTC, toWei('1.5'), MAX, {from: ttrader, value: toWei('1.5')});
 
-        assert.isAtLeast(Number(fromWei(await wnative_contract.balanceOf.call(tpool7.address))), pool_native_balance);
+        assert.isAbove(Number(fromWei(await wnative_contract.balanceOf.call(tpool7.address))), pool_native_balance);
 
         let nativeBalance = await web3.eth.getBalance(proxy.address);
         assert.equal(nativeBalance, 0);
-
       });
 
+    it('joinPool with native token', async () => {
+        let maxAmountsIn = [toWei('2'), toWei('3500'), toWei('1')];
+        await proxy.joinPool(tpool7.address, toWei('1'), maxAmountsIn, MAX, {from: ttrader, value: toWei('2')});
+        let poolTokenBalance = (await tpool7.balanceOf.call(ttrader)).toString();
+        assert.equal(poolTokenBalance, toWei('101'));
+
+        assert.equal(await web3.eth.getBalance(proxy.address), 0);
+        assert.equal(await wnative_contract.balanceOf.call(proxy.address), 0);
+        assert.equal(await dai.balanceOf.call(proxy.address), 0);
+        assert.equal(await wbtc.balanceOf.call(proxy.address), 0);
+    });
+
+    it('joinswapExternAmountIn with native token', async () => {
+        await proxy.joinswapExternAmountIn(tpool7.address, NATIVE_ADDRESS, toWei('1'), toWei('0.01'), MAX, {from: ttrader, value: toWei('1')});
+        let poolTokenBalance = Number(fromWei((await tpool7.balanceOf.call(ttrader)).toString()));
+        assert.isAbove(poolTokenBalance, 100);
+
+        assert.equal(await web3.eth.getBalance(proxy.address), 0);
+        assert.equal(await wnative_contract.balanceOf.call(proxy.address), 0);
+        assert.equal(await dai.balanceOf.call(proxy.address), 0);
+        assert.equal(await wbtc.balanceOf.call(proxy.address), 0);
+    });
 });

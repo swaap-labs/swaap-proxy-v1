@@ -488,21 +488,35 @@ contract Proxy {
         IPool(pool).setController(msg.sender);
     }
 
-    // Join pool without time constraints
+    /**
+    * @notice Join a pool with a fixed poolAmountOut
+    * @dev Joining a pool could be done using the native token or its wrapped token, but not with both at the same time. 
+    * In both cases, the wrapped token's address should be specified as an input (tokenIn).
+    * @param pool Pool's address
+    * @param poolAmountOut Pool tokens (shares) to be receives
+    * @param maxAmountsIn Maximum amounts of each token
+    * @param deadline Maximum deadline for accepting the joinPool
+    */
     function joinPool(
         address pool,
-        uint256[] calldata maxAmountsIn,
         uint256 poolAmountOut,
+        uint256[] calldata maxAmountsIn,
         uint256 deadline
     )
-    external
+    external payable
     _beforeDeadline(deadline)
     {
 
         address[] memory tokensIn = IPool(pool).getTokens();
 
         for(uint i; i < tokensIn.length;) {
-            transferFromAll(tokensIn[i], maxAmountsIn[i]);
+
+            if(tokensIn[i] == wnative && msg.value > 0) {
+                require(msg.value == maxAmountsIn[i], "ERR_BAD_MAX_AMOUNT_IN");
+                transferFromAll(NATIVE_ADDRESS, maxAmountsIn[i]);
+            } else {
+                transferFromAll(tokensIn[i], maxAmountsIn[i]);
+            }
 
             if (IERC20(tokensIn[i]).allowance(address(this), pool) > 0) {
                 IERC20(tokensIn[i]).approve(pool, 0);
@@ -515,7 +529,13 @@ contract Proxy {
         IPool(pool).joinPool(poolAmountOut, maxAmountsIn);
 
         for(uint i; i < tokensIn.length;) {
-            transferAll(tokensIn[i], IERC20(tokensIn[i]).balanceOf(address(this)));
+
+            if(tokensIn[i] == wnative && msg.value > 0) {
+                transferAll(NATIVE_ADDRESS, IERC20(tokensIn[i]).balanceOf(address(this)));
+            } else {
+                transferAll(tokensIn[i], IERC20(tokensIn[i]).balanceOf(address(this)));
+            }
+
             unchecked{++i;}
         }
 
@@ -523,25 +543,39 @@ contract Proxy {
 
     }
 
-    // Join pool without time constraints
+    /**
+    * @notice Joins a pool with 1 tokenIn
+    * @dev When joining a with the native token, msg.value should be equal to tokenAmountIn
+    * @param pool Pool's address
+    * @param tokenIn TokenIn's address
+    * @param tokenAmountIn Amount of token In
+    * @param minPoolAmountOut Minimum pool tokens (shares) expected to receive
+    * @param deadline Maximum deadline for accepting the joinswapExternAmountIn
+    * @return poolAmountOut The pool tokens received
+    */
     function joinswapExternAmountIn(
         address pool,
         address tokenIn,
         uint tokenAmountIn,
         uint minPoolAmountOut,
         uint256 deadline
-    ) external
+    ) external payable
     _beforeDeadline(deadline)
     returns (uint256 poolAmountOut)
     {
         transferFromAll(tokenIn, tokenAmountIn);
+
+        if(tokenIn == NATIVE_ADDRESS) {
+            require(msg.value == tokenAmountIn, "ERR_BAD_AMOUNT_IN");
+            tokenIn = wnative;
+        }
         
         if (IERC20(tokenIn).allowance(address(this), pool) > 0) {
             IERC20(tokenIn).approve(pool, 0);
         }
         IERC20(tokenIn).approve(pool, tokenAmountIn);
 
-        poolAmountOut = IPool(pool).joinswapExternAmountInMMM(address(tokenIn), tokenAmountIn, minPoolAmountOut);
+        poolAmountOut = IPool(pool).joinswapExternAmountInMMM(tokenIn, tokenAmountIn, minPoolAmountOut);
         
         IToken(pool).transfer(msg.sender, IToken(pool).balanceOf(address(this)));
         
