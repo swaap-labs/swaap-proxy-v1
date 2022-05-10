@@ -68,6 +68,14 @@ contract Proxy {
         _;
     }
 
+    bool locked;
+    modifier _lock() {
+        require(!locked, "ERR_REENTRANCY");
+        locked = true;
+        _;
+        locked = false;
+    }
+
     address immutable private wnative;
     address constant private NATIVE_ADDRESS = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
 
@@ -96,6 +104,7 @@ contract Proxy {
     )
         external payable
         _beforeDeadline(deadline)
+        _lock
         returns (uint totalAmountOut)
     {
         transferFromAll(tokenIn, totalAmountIn);
@@ -154,6 +163,7 @@ contract Proxy {
     )
         external payable
         _beforeDeadline(deadline)
+        _lock
         returns (uint totalAmountIn)
     {
         transferFromAll(tokenIn, maxTotalAmountIn);
@@ -222,6 +232,7 @@ contract Proxy {
     )
         public payable
         _beforeDeadline(deadline)
+        _lock
         returns (uint totalAmountOut)
     {
 
@@ -293,6 +304,7 @@ contract Proxy {
     )
         public payable
         _beforeDeadline(deadline)
+        _lock
         returns (uint totalAmountIn)
     {
         transferFromAll(tokenIn, maxTotalAmountIn);
@@ -401,6 +413,8 @@ contract Proxy {
         uint deadline
     ) 
         external payable
+        _beforeDeadline(deadline)
+        _lock
         returns (address poolAddress)
     {
         poolAddress = factory.newPool();
@@ -431,6 +445,8 @@ contract Proxy {
         uint deadline
     ) 
         external payable
+        _beforeDeadline(deadline)
+        _lock
         returns (address poolAddress)
     {
         poolAddress = factory.newPool();
@@ -505,6 +521,7 @@ contract Proxy {
     )
     external payable
     _beforeDeadline(deadline)
+    _lock
     {
 
         address[] memory tokensIn = IPool(pool).getTokens();
@@ -561,6 +578,7 @@ contract Proxy {
         uint256 deadline
     ) external payable
     _beforeDeadline(deadline)
+    _lock
     returns (uint256 poolAmountOut)
     {
         transferFromAll(tokenIn, tokenAmountIn);
