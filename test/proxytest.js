@@ -33,13 +33,6 @@ contract('Proxy - BatchSwap', async (accounts) => {
     let wbtc;
     const errorDelta = 10 ** -4;
 
-    function calcRelativeDiff(expected, actual) {
-        if (actual == 0 && expected == 0) {
-            return Decimal(0);
-        }
-        return ((Decimal(expected).minus(Decimal(actual))).div(expected)).abs();
-    }    
-
     async function assertTraderBalances() {
         let ttraderBalance = fromWei(await weth.balanceOf.call(ttrader));
         let ctraderBalance = fromWei(await weth.balanceOf.call(ctrader));
@@ -64,6 +57,24 @@ contract('Proxy - BatchSwap', async (accounts) => {
         assert.equal(daiBalance, 0);
         let wbtcBalance = fromWei(await wbtc.balanceOf.call(proxy.address));
         assert.equal(wbtcBalance, 0);
+    }
+
+    function calcRelativeDiff(expected, actual) {
+        if (actual == 0 && expected == 0) {
+            return Decimal(0);
+        }
+        return ((Decimal(expected).minus(Decimal(actual))).div(expected)).abs();
+    }    
+
+    async function poolPriceDifference(balancedPool, tokenIn, oracleIn, tokenOut, oracleOut, maxPriceDifference) {
+        let SP = Decimal(fromWei(await balancedPool.getSpotPriceSansFee(tokenIn, tokenOut)));
+        
+        oracleIn = await TPriceConsumerV3.at(oracleIn);
+        oracleOut = await TPriceConsumerV3.at(oracleOut);
+        let OP = Decimal(fromWei(await oracleOut.latestAnswer.call())) / Decimal(fromWei(await oracleIn.latestAnswer.call()))
+ 
+        let priceDifference = calcRelativeDiff(SP, OP);
+        assert.isAtMost(priceDifference.toNumber(), maxPriceDifference);
     }
 
     before(async () => {        
@@ -381,6 +392,51 @@ contract('Proxy - BatchSwap', async (accounts) => {
         assert.equal(await web3.eth.getBalance(proxy.address), 0);
         assert.equal(await wnative_contract.balanceOf.call(proxy.address), 0);
         assert.equal(await wbtc.balanceOf.call(proxy.address), 0);
+    });
+
+    it('Create a balanced pool with parameters & finalizing', async () => {
+        // bindToken = [tokenAddress, balance, weight, oracleAddress]
+        let bindToken1 = [WETH, toWei('2'), toWei('5'), ETHAggregatorAddress];
+        let bindToken2 = [DAI, toWei('15000'), toWei('2.5'), DAIAggregatorAddress];
+        let bindToken3 = [WBTC, toWei('1'), toWei('6'), BTCAggregatorAddress];
+
+        let params = [
+            publicSwap = 'true',
+            priceStatisticsLookbackInRound = '5',
+            dynamicCoverageFeesZ = toWei('10'),
+            swapFee = toWei('0.1'),
+            priceStatisticsLookbackInSec = '2000',
+            dynamicCoverageFeesHorizon = toWei('50'),
+        ];
+
+        let bindTokens = [bindToken1, bindToken2, bindToken3];
+        // inputs: bindTokens[], finalize, deadline
+        let BALANCED_POOL = await proxy.createBalancedPoolWithParams.call(bindTokens, params, factory.address,  true, MAX, {from: ttrader}); 
+        await proxy.createBalancedPoolWithParams(bindTokens, params, factory.address, true, MAX, {from: ttrader}); 
+        
+        let balancedPool = await Pool.at(BALANCED_POOL);
+
+        // assert SpotPrice[i][j] == OraclePrice[i][j] for all i != j
+        // difference between SP and OP
+        await poolPriceDifference(balancedPool, WETH, ETHAggregatorAddress, DAI, DAIAggregatorAddress, 1e-6);
+        await poolPriceDifference(balancedPool, WETH, ETHAggregatorAddress, WBTC, BTCAggregatorAddress, 1e-6);
+        await poolPriceDifference(balancedPool, WBTC, BTCAggregatorAddress, DAI, DAIAggregatorAddress, 1e-6);
+        
+        // assert bound tokens parameters
+        assert.equal((await balancedPool.getDenormalizedWeight.call(WBTC)).toString(), toWei('6'));
+        assert.equal((await weth.balanceOf.call(BALANCED_POOL)).toString(), toWei('2'));
+
+        let poolTokenBalance = (await balancedPool.balanceOf.call(ttrader)).toString();
+        assert.equal(poolTokenBalance, toWei('100'));
+
+        let coverageParams = await balancedPool.getCoverageParameters.call()
+        assert.equal(await balancedPool.getSwapFee.call(), toWei('0.1'));
+        assert.equal(coverageParams[0], toWei('10'));
+        assert.equal(coverageParams[1], toWei('50'));
+        assert.equal(coverageParams[2], 5);
+        assert.equal(coverageParams[3], 2000);
+
+        await assertProxyBalances();
     });
 
     it('BatchSwapIn with native token', async () => {

@@ -18,6 +18,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IPool.sol";
 import "./interfaces/IFactory.sol";
 import "./interfaces/IToken.sol";
+import "./interfaces/IAggregatorV3.sol";
 
 contract Proxy {
 
@@ -78,6 +79,7 @@ contract Proxy {
 
     address immutable private wnative;
     address constant private NATIVE_ADDRESS = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
+    uint256 constant private ONE = 10 ** 18;
 
     constructor(address _wnative) {
         wnative = _wnative;
@@ -398,6 +400,69 @@ contract Proxy {
     }
 
     /**
+    * @notice Creates a balanced pool with customized parameters where oracle-spot-price == pool-spot-price
+    * @dev A pool is balanced if (balance_i * weight_j) / (balance_j * weight_i) = oraclePrice_j / oraclePrice_i, for all i != j
+    * as a result: balance_i = (oraclePrice_j * balance_j * weight_i) / (oraclePrice_i * weight_j)
+    * @param bindTokens Array containing the information of the tokens to bind [tokenAddress, balance, weight, oracleAddress]
+    * @param params Customized parameters of the pool 
+    * @param finalize Bool to finalize the pool or not
+    * @param deadline Maximum deadline for accepting the creation of the pool
+    * @return poolAddress The created pool's address
+    */
+    function createBalancedPoolWithParams(
+	    BindToken[] memory bindTokens,
+        Params calldata params,
+        IFactory factory,
+        bool finalize,
+        uint deadline
+    ) 
+        external payable
+        _beforeDeadline(deadline)
+        _lock
+        returns (address poolAddress)
+    {
+        uint bindTokensNumber = bindTokens.length;
+        uint256[] memory oraclePrices = new uint256[](bindTokensNumber);
+        int256 price;
+        for(uint i; i < bindTokensNumber;) {
+            (,price,,,) = IAggregatorV3(bindTokens[i].oracle).latestRoundData();
+            require(price > 0, "ERR_NEGATIVE_PRICE");
+            oraclePrices[i] = uint(price);
+            unchecked {++i;}
+        }
+
+        
+        uint balance_i;
+        uint8 decimals_0 = IAggregatorV3(bindTokens[0].oracle).decimals();
+        for(uint i=1; i < bindTokensNumber;){
+            //    balance_i = (oraclePrice_j / oraclePrice_i) * (balance_j * weight_i) / (weight_j)
+            // => balance_i = (relativePrice_j_i * balance_j * weight_i) / (weight_j)
+            balance_i = getTokenRelativePrice(
+                oraclePrices[i],
+                IAggregatorV3(bindTokens[i].oracle).decimals(),
+                oraclePrices[0],
+                decimals_0
+            );
+            
+            balance_i = bmul(balance_i, bindTokens[0].balance);
+            balance_i = bmul(balance_i, bindTokens[i].weight);
+            balance_i = bdiv(balance_i, bindTokens[0].weight);
+            require(balance_i <= bindTokens[i].balance, "ERR_LIMIT_IN");
+            bindTokens[i].balance = balance_i;
+            unchecked {++i;}
+        }
+    
+
+        poolAddress = _createPoolWithParams(
+            bindTokens,
+            params,
+            factory,
+            finalize
+        );
+
+    }
+
+    /**
     * @notice Creates a pool with customized parameters
     * @param bindTokens Array containing the information of the tokens to bind [tokenAddress, balance, weight, oracleAddress]
     * @param params Customized parameters of the pool 
@@ -412,9 +477,26 @@ contract Proxy {
         bool finalize,
         uint deadline
     ) 
-        external payable
         _beforeDeadline(deadline)
         _lock
+        external payable
+        returns (address poolAddress)
+    {
+        poolAddress = _createPoolWithParams(
+                bindTokens,
+                params,
+                factory,
+                finalize
+        );
+    }
+
+    function _createPoolWithParams(
+	    BindToken[] memory bindTokens,
+        Params calldata params,
+        IFactory factory,
+        bool finalize
+    ) 
+        internal
         returns (address poolAddress)
     {
         poolAddress = factory.newPool();
@@ -428,7 +510,7 @@ contract Proxy {
         pool.setPriceStatisticsLookbackInRound(params.priceStatisticsLookbackInRound);
         pool.setPriceStatisticsLookbackInSec(params.priceStatisticsLookbackInSec);
 
-        _setPool(poolAddress, bindTokens, finalize, deadline);
+        _setPool(poolAddress, bindTokens, finalize);
     }
 
     /**
@@ -451,17 +533,15 @@ contract Proxy {
     {
         poolAddress = factory.newPool();
 
-        _setPool(poolAddress, bindTokens, finalize, deadline);
+        _setPool(poolAddress, bindTokens, finalize);
     }
 
     function _setPool(
         address pool,
-	    BindToken[] calldata bindTokens,
-        bool finalize,
-        uint deadline
+	    BindToken[] memory bindTokens,
+        bool finalize
     )
         internal
-        _beforeDeadline(deadline)
     {
         address tokenIn;
 
@@ -620,7 +700,6 @@ contract Proxy {
         if (amount != 0) {
             if (isNative(token)) {
                 IToken(wnative).withdraw(amount);
-                // TODO: check safety of transfer
                 payable(msg.sender).transfer(amount);
             } else {
                 IERC20(token).safeTransfer(msg.sender, amount);
@@ -633,4 +712,48 @@ contract Proxy {
     }
 
     receive() external payable{}
+
+    function bmul(uint256 a, uint256 b)
+        internal pure
+        returns (uint256)
+    {
+        uint256 c0 = a * b;
+        uint256 c1 = c0 + (ONE / 2);
+        uint256 c2 = c1 / ONE;
+        return c2;
+    }
+
+    function bdiv(uint256 a, uint256 b)
+        internal pure
+        returns (uint256)
+    {
+        uint256 c0 = a * ONE;
+        uint256 c1 = c0 + (b / 2);
+        uint256 c2 = c1 / b;
+        return c2;
+    }
+
+    function getTokenRelativePrice(
+        uint256 price_1, uint8 decimal_1,
+        uint256 price_2, uint8 decimal_2
+    )
+    internal
+    pure
+    returns (uint256) {
+        // we consider tokens price to be > 0
+        uint256 rawDiv = bdiv(price_2, price_1);
+        if (decimal_1 == decimal_2) {
+            return rawDiv;
+        } else if (decimal_1 > decimal_2) {
+            return bmul(
+                rawDiv,
+                10**(decimal_1 - decimal_2)*ONE
+            );
+        } else {
+            return bdiv(
+                rawDiv,
+                10**(decimal_2 - decimal_1)*ONE
+            );
+        }
+    }
 }
