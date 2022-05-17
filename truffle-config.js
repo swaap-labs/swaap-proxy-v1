@@ -67,13 +67,30 @@ module.exports = {
       timeoutBlocks: 50000,
       networkCheckTimeout: 1000000
     },
+    polygon: {
+      provider: () => new HDWalletProvider(
+        //private keys array
+        process.env.MNEMONIC,
+        //url to ethereum node
+        "https://matic-mainnet.chainstacklabs.com",
+        //account index
+        process.env.ACCOUNT_INDEX
+      ),
+      network_id: 137,
+      confirmations: 10,
+      timeoutBlocks: 200,
+      skipDryRun: true,
+      chainId: 137,
+      networkCheckTimeoutnetworkCheckTimeout: 10000,
+      timeoutBlocks: 200
+    },
     mumbai: {
       provider: function() {
         return new HDWalletProvider(
           //private keys array
           process.env.MNEMONIC,
           //url to polygon node
-          process.env.INFURA_MUMBAI_ENDPOINT_URL,
+          "https://matic-mumbai.chainstacklabs.com",
           //account index
           process.env.ACCOUNT_INDEX
         );
@@ -123,7 +140,7 @@ module.exports = {
         // See the solidity docs for advice about optimization and evmVersion
         optimizer: {
           enabled: true,
-          runs: 1
+          runs: 200
         },
         evmVersion: "istanbul",
         outputSelection: {
