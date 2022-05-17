@@ -1,7 +1,6 @@
 const Factory = artifacts.require('Factory');
 const Pool = artifacts.require('Pool');
 const TPriceConsumerV3 = artifacts.require('TPriceConsumerV3');
-const Decimal = require('decimal.js');
 const web3 = require('web3')
 const { toWei } = web3.utils;
 const TToken = artifacts.require('TToken');
