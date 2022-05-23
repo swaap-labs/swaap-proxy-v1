@@ -7,7 +7,7 @@ const Pool = artifacts.require("Pool");
 const Proxy = artifacts.require("Proxy");
 const assert = require("assert");
 
-let gasPrice = await web3.eth.getGasPrice();
+let gasPrice;
 
 /* ------------------------------------- Pool Configuration ------------------------------------- */
 // network id
@@ -43,6 +43,8 @@ const newController = process.env.NEW_CONTROLLER_POLYGON;
 /* ---------------------------------------------------------------------------------------------- */
 
 async function main(){
+
+    gasPrice = await web3.eth.getGasPrice();
 
     const [sender, FACTORY_ADDRESS, PROXY_ADDRESS] = await getEnvVariables();
     
