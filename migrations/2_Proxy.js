@@ -12,7 +12,9 @@ module.exports = async function (deployer, network, accounts) {
         if (index === undefined) {
             throw "Undefined account index";
         }
-        deployer.deploy(Proxy, wnative, {from: accounts[index]});
+        let gasPrice = await web3.eth.getGasPrice();
+        let proxy = await deployer.deploy(Proxy, wnative, {gasPrice:gasPrice});
+        console.log(`Proxy address: ${proxy.address}`);
     }
 
 };

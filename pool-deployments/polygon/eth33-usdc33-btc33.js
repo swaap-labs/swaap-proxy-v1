@@ -7,6 +7,8 @@ const Pool = artifacts.require("Pool");
 const Proxy = artifacts.require("Proxy");
 const assert = require("assert");
 
+let gasPrice = await web3.eth.getGasPrice();
+
 /* ------------------------------------- Pool Configuration ------------------------------------- */
 // network id
 const networkId = 137;
@@ -55,9 +57,24 @@ async function main(){
     const maxDeadline = Math.floor(Date.now()/1000) + 60*10;
 
     const proxy = await Proxy.at(PROXY_ADDRESS);
-    const poolAddress = await proxy.createBalancedPoolWithParams.call(bindTokens, params, FACTORY_ADDRESS, isFinalized, maxDeadline, {from: sender});
+    const poolAddress = await proxy.createBalancedPoolWithParams.call(
+        bindTokens,
+        params,
+        FACTORY_ADDRESS,
+        isFinalized,
+        maxDeadline,
+        {from: sender}
+    );
 
-    await proxy.createBalancedPoolWithParams(bindTokens, params, FACTORY_ADDRESS, isFinalized, maxDeadline, {from: sender});
+    await proxy.createBalancedPoolWithParams(
+        bindTokens,
+        params,
+        FACTORY_ADDRESS,
+        isFinalized,
+        maxDeadline,
+        {from: sender, gasPrice: gasPrice}
+    );
+
     console.log(`Pool ${poolAddress} successfully created`);
 
     const pool = await Pool.at(poolAddress); 
@@ -120,7 +137,11 @@ async function setApprovals(sender, PROXY_ADDRESS, maxBalances) {
     for (const [index, token] of tokens.entries()) {
         console.log(`Approving proxy to use ${maxBalances[index]} ${token}`);
         const tokenContract = await IToken.at(tokenOraclePairs[token].token);
-        await tokenContract.approve(PROXY_ADDRESS, web3.utils.toWei(String(maxBalances[index])), {from: sender});
+        await tokenContract.approve(
+            PROXY_ADDRESS,
+            web3.utils.toWei(String(maxBalances[index])),
+            {from: sender, gasPrice: gasPrice}
+        );
     }
     
     console.log("Successfully approved all tokens");
