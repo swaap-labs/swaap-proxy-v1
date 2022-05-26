@@ -17,7 +17,6 @@ const weights = [10, 10, 10];
 
 // Quote currency
 const quote = "USD";
-const oracleDecimals = 10**8; // corresponds to the oracle decimals
 
 // initial TVL in quote currency (i.e. in USD if oracle prices are in USD)
 const TVL = 1000;
@@ -95,18 +94,22 @@ async function main(){
 async function getMaxBalancesGivenTVL() {
     // sum of weights
     totalWeight = weights.reduce((partialSum, a) => partialSum + a, 0);
-    const slippageTolerance = 1.001;
+    const slippageTolerance = 1.001; // 0.1%
     let maximumBalances = [];
 
     for (const [index, token] of tokens.entries()) {
+        const tokenContract = await IToken.at(tokenOraclePairs[token].token);
+        const tokenDecimals = (await tokenContract.decimals.call()).toNumber();
         const tokenAggregator = await IAggregatorV3.at(tokenOraclePairs[token].oracles[quote]);
-        const tokenPrice = ((await tokenAggregator.latestRoundData.call()).answer).toNumber() / (oracleDecimals);
-        const tokenWeigth = weights[index];
-        let tokenMaxBalance = TVL * (tokenWeigth)/(totalWeight) / tokenPrice;
+        const oracleDecimals = (await tokenAggregator.decimals.call()).toNumber();
+        const oraclePrice = ((await tokenAggregator.latestRoundData.call()).answer).toNumber();
+
+        let tokenMaxBalance = TVL * (10**(tokenDecimals+oracleDecimals)) * (weights[index]/totalWeight) / (oraclePrice);
+
         if(index > 0) {
             tokenMaxBalance = tokenMaxBalance * slippageTolerance;
         }
-        maximumBalances.push(tokenMaxBalance);
+        maximumBalances.push(Math.floor(tokenMaxBalance));
     }
 
     return maximumBalances;
@@ -136,12 +139,15 @@ async function setApprovals(sender, PROXY_ADDRESS, maxBalances) {
 
     let gasPrice;
     for (const [index, token] of tokens.entries()) {
-        console.log(`Approving proxy to use ${maxBalances[index]} ${token}`);
         const tokenContract = await IToken.at(tokenOraclePairs[token].token);
+        const tokenDecimals = (await tokenContract.decimals.call()).toNumber();
+        const balanceInDecimals = maxBalances[index] / (10**tokenDecimals);
+        console.log(`Approving proxy to use ${balanceInDecimals} ${token}`);
         gasPrice = await web3.eth.getGasPrice();
+
         await tokenContract.approve(
             PROXY_ADDRESS,
-            web3.utils.toWei(String(maxBalances[index])),
+            '0x' + maxBalances[index].toString(16),
             {from: sender, gasPrice: gasPrice}
         );
     }
@@ -156,7 +162,7 @@ function buildBindTokens(maxBalances) {
     for (const [index, token] of tokens.entries()) {
         const bindToken = [
             tokenOraclePairs[token].token,
-            web3.utils.toWei(String(maxBalances[index])),
+            '0x' + (maxBalances[index]).toString(16),
             web3.utils.toWei(String(weights[index])),
             tokenOraclePairs[token].oracles[quote]
         ];
@@ -183,7 +189,10 @@ async function assertParameters(pool) {
         const balance = web3.utils.fromWei(await pool.getBalance.call(tokenOraclePairs[token].token));
         const weight = web3.utils.fromWei(await pool.getDenormalizedWeight.call(tokenOraclePairs[token].token));
         const oracle = await pool.getTokenPriceOracle.call(tokenOraclePairs[token].token);
-        const oraclePrice = (await pool.getTokenOracleInitialPrice.call(tokenOraclePairs[token].token)).toNumber()/ oracleDecimals;
+        
+        const tokenAggregator = await IAggregatorV3.at(tokenOraclePairs[token].oracles[quote]);
+        const oracleDecimals = await tokenAggregator.decimals();
+        const oraclePrice = (await pool.getTokenOracleInitialPrice.call(tokenOraclePairs[token].token)).toNumber() / (10**oracleDecimals);
 
         assert.equal(weight, weights[index]);
         assert.equal(oracle, tokenOraclePairs[token].oracles[quote]);
