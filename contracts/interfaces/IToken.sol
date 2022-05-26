@@ -22,4 +22,5 @@ interface IToken {
     function transferFrom(address, address, uint) external returns (bool);
     function deposit() external payable;
     function withdraw(uint) external;
+    function decimals() external returns (uint8);
 }

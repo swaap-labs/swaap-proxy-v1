@@ -6,6 +6,7 @@ const TToken = artifacts.require('TToken');
 const TPriceConsumerV3 = artifacts.require('TPriceConsumerV3');
 const Decimal = require('decimal.js');
 const { createBalancedPool } = require('./lib/createBalancedPool');
+const TConstantOracle = artifacts.require('TConstantOracle');
 
 contract('Proxy - BatchSwap', async (accounts) => {
     
@@ -80,7 +81,7 @@ contract('Proxy - BatchSwap', async (accounts) => {
     before(async () => {        
         factory = await Factory.deployed();
         proxy = await Proxy.new(wnative);
-    
+        
         wnative_contract = await TToken.at(wnative);
 
         await Promise.all([
@@ -140,6 +141,97 @@ contract('Proxy - BatchSwap', async (accounts) => {
         await wbtc.approve(cpool2.address, MAX, {from: ctrader});
 
         console.log("Tokens approved");
+
+    });
+
+    it('Create a balanced pool with with different token and oracle decimals', async () => {
+        // TVL in USD
+        TVL = 40000;
+
+        // token prices in usd
+        const wethUSD = 2000;
+        const usdcUSD = 1;
+        const wbtcUSD = 40000;
+
+        // token decimals
+        const wethTokenDecimals = 18;
+        const usdcTokenDecimals = 6;
+        const wbtcTokenDecimals = 8;
+        // oracle decimals
+        const wethOracleDecimals = 6;
+        const usdcOracleDecimals = 8;
+        const wbtcOracleDecimals = 8;
+        // token weights
+        const wethWeight = 2;
+        const usdcWeight = 1;
+        const wbtcWeight = 1;
+        const totalWeight = wethWeight + usdcWeight + wbtcWeight;
+
+        // expected balances in wei
+        const wethBalanceExpected = String(((wethWeight * TVL) / totalWeight) * (10 ** (wethTokenDecimals)) / wethUSD);
+        const usdcBalanceExpected = String(((usdcWeight * TVL) / totalWeight) * (10 ** (usdcTokenDecimals)) / usdcUSD);
+        const wbtcBalanceExpected = String(((wbtcWeight * TVL) / totalWeight) * (10 ** (wbtcTokenDecimals)) / wbtcUSD);      
+
+        // set tokens
+        const wethDec = await TToken.new('WETH Decimals', 'WETH', wethTokenDecimals);
+        const usdcDec = await TToken.new('USDC Decimals', 'USDC', usdcTokenDecimals);
+        const wbtcDec = await TToken.new('WBTC Decimals', 'WBTC', wbtcTokenDecimals);
+
+        // mint tokens
+        await wethDec.mint(ttrader, toWei('1000000'), { from: admin });
+        await usdcDec.mint(ttrader, toWei('1000000'), { from: admin });
+        await wbtcDec.mint(ttrader, toWei('1000000'), { from: admin });
+
+        // set approvals
+        await wethDec.approve(proxy.address, MAX, { from: ttrader});
+        await usdcDec.approve(proxy.address, MAX, { from: ttrader});
+        await wbtcDec.approve(proxy.address, MAX, { from: ttrader});
+
+        // set oracles
+        const wethDecOracle = await TConstantOracle.new(wethUSD*(10**wethOracleDecimals), wethOracleDecimals);
+        const usdcDecOracle = await TConstantOracle.new(usdcUSD*(10**usdcOracleDecimals), usdcOracleDecimals);
+        const wbtcDecOracle = await TConstantOracle.new(wbtcUSD*(10**wbtcOracleDecimals), wbtcOracleDecimals);
+
+        // bindToken = [tokenAddress, balance, weight, oracleAddress]    
+        let wethBind = [wethDec.address, wethBalanceExpected,toWei(String(wethWeight)), wethDecOracle.address];
+        let usdcBind = [usdcDec.address, usdcBalanceExpected,toWei(String(usdcWeight)), usdcDecOracle.address];
+        let wbtcBind = [wbtcDec.address, wbtcBalanceExpected,toWei(String(wbtcWeight)), wbtcDecOracle.address];
+
+        let params = [
+            publicSwap = 'true',
+            priceStatisticsLookbackInRound = '5',
+            dynamicCoverageFeesZ = toWei('10'),
+            swapFee = toWei('0.1'),
+            priceStatisticsLookbackInSec = '2000',
+            dynamicCoverageFeesHorizon = toWei('50'),
+        ];
+
+        let bindTokens = [wethBind, usdcBind, wbtcBind];
+        // inputs: bindTokens[], finalize, deadline
+        let BALANCED_POOL = await proxy.createBalancedPoolWithParams.call(bindTokens, params, factory.address,  true, MAX, {from: ttrader}); 
+        await proxy.createBalancedPoolWithParams(bindTokens, params, factory.address, true, MAX, {from: ttrader}); 
+        
+        assert.equal((await wethDec.balanceOf.call(BALANCED_POOL)).toString(), wethBalanceExpected);
+        assert.equal((await usdcDec.balanceOf.call(BALANCED_POOL)).toString(), usdcBalanceExpected);
+        assert.equal((await wbtcDec.balanceOf.call(BALANCED_POOL)).toString(), wbtcBalanceExpected);
+
+        bindTokens = [wbtcBind, usdcBind, wethBind];
+        // inputs: bindTokens[], finalize, deadline
+        BALANCED_POOL = await proxy.createBalancedPoolWithParams.call(bindTokens, params, factory.address,  true, MAX, {from: ttrader}); 
+        await proxy.createBalancedPoolWithParams(bindTokens, params, factory.address, true, MAX, {from: ttrader}); 
+        
+        assert.equal((await wethDec.balanceOf.call(BALANCED_POOL)).toString(), wethBalanceExpected);
+        assert.equal((await usdcDec.balanceOf.call(BALANCED_POOL)).toString(), usdcBalanceExpected);
+        assert.equal((await wbtcDec.balanceOf.call(BALANCED_POOL)).toString(), wbtcBalanceExpected);
+
+        bindTokens = [usdcBind, wbtcBind, wethBind];
+        // inputs: bindTokens[], finalize, deadline
+        BALANCED_POOL = await proxy.createBalancedPoolWithParams.call(bindTokens, params, factory.address,  true, MAX, {from: ttrader}); 
+        await proxy.createBalancedPoolWithParams(bindTokens, params, factory.address, true, MAX, {from: ttrader}); 
+        
+        assert.equal((await wethDec.balanceOf.call(BALANCED_POOL)).toString(), wethBalanceExpected);
+        assert.equal((await usdcDec.balanceOf.call(BALANCED_POOL)).toString(), usdcBalanceExpected);
+        assert.equal((await wbtcDec.balanceOf.call(BALANCED_POOL)).toString(), wbtcBalanceExpected);
 
     });
     
@@ -545,4 +637,5 @@ contract('Proxy - BatchSwap', async (accounts) => {
         assert.equal(await dai.balanceOf.call(proxy.address), 0);
         assert.equal(await wbtc.balanceOf.call(proxy.address), 0);
     });
+
 });

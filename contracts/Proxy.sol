@@ -433,13 +433,13 @@ contract Proxy {
 
         
         uint balance_i;
-        uint8 decimals_0 = IAggregatorV3(bindTokens[0].oracle).decimals();
+        uint8 decimals_0 = IAggregatorV3(bindTokens[0].oracle).decimals() + IToken(bindTokens[0].token).decimals();
         for(uint i=1; i < bindTokensNumber;){
             //    balance_i = (oraclePrice_j / oraclePrice_i) * (balance_j * weight_i) / (weight_j)
             // => balance_i = (relativePrice_j_i * balance_j * weight_i) / (weight_j)
             balance_i = getTokenRelativePrice(
                 oraclePrices[i],
-                IAggregatorV3(bindTokens[i].oracle).decimals(),
+                IAggregatorV3(bindTokens[i].oracle).decimals() + IToken(bindTokens[i].token).decimals(),
                 oraclePrices[0],
                 decimals_0
             );
