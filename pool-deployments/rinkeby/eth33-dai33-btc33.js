@@ -55,9 +55,26 @@ async function main(){
     const maxDeadline = Math.floor(Date.now()/1000) + 60*10;
 
     const proxy = await Proxy.at(PROXY_ADDRESS);
-    const poolAddress = await proxy.createBalancedPoolWithParams.call(bindTokens, params, FACTORY_ADDRESS, isFinalized, maxDeadline, {from: sender});
+    const poolAddress = await proxy.createBalancedPoolWithParams.call(
+        bindTokens,
+        params,
+        FACTORY_ADDRESS,
+        isFinalized,
+        maxDeadline,
+        {from: sender}
+    );
 
-    await proxy.createBalancedPoolWithParams(bindTokens, params, FACTORY_ADDRESS, isFinalized, maxDeadline, {from: sender});
+    let gasPrice = await web3.eth.getGasPrice();
+
+    await proxy.createBalancedPoolWithParams(
+        bindTokens,
+        params,
+        FACTORY_ADDRESS,
+        isFinalized,
+        maxDeadline,
+        {from: sender, gasPrice: gasPrice}
+    );
+
     console.log(`Pool ${poolAddress} successfully created`);
 
     const pool = await Pool.at(poolAddress); 
@@ -117,10 +134,16 @@ async function getEnvVariables() {
 
 async function setApprovals(sender, PROXY_ADDRESS, maxBalances) {
 
+    let gasPrice;
     for (const [index, token] of tokens.entries()) {
         console.log(`Approving proxy to use ${maxBalances[index]} ${token}`);
         const tokenContract = await IToken.at(tokenOraclePairs[token].token);
-        await tokenContract.approve(PROXY_ADDRESS, web3.utils.toWei(String(maxBalances[index])), {from: sender});
+        gasPrice = await web3.eth.getGasPrice();
+        await tokenContract.approve(
+            PROXY_ADDRESS,
+            web3.utils.toWei(String(maxBalances[index])),
+            {from: sender, gasPrice: gasPrice}
+        );
     }
     
     console.log("Successfully approved all tokens");
@@ -175,6 +198,6 @@ module.exports = async function(callback) {
     if (detectedNetworkId !== networkId) {
         throw 'Wrong network Id';
     }
-    
+
     main().then(() => callback()).catch(err => callback(err));
 }

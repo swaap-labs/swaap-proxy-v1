@@ -7,8 +7,6 @@ const Pool = artifacts.require("Pool");
 const Proxy = artifacts.require("Proxy");
 const assert = require("assert");
 
-let gasPrice;
-
 /* ------------------------------------- Pool Configuration ------------------------------------- */
 // network id
 const networkId = 137;
@@ -44,8 +42,6 @@ const newController = process.env.NEW_CONTROLLER_POLYGON;
 
 async function main(){
 
-    gasPrice = await web3.eth.getGasPrice();
-
     const [sender, FACTORY_ADDRESS, PROXY_ADDRESS] = await getEnvVariables();
     
     const maxBalances = await getMaxBalancesGivenTVL();
@@ -67,6 +63,8 @@ async function main(){
         maxDeadline,
         {from: sender}
     );
+
+    let gasPrice = await web3.eth.getGasPrice();
 
     await proxy.createBalancedPoolWithParams(
         bindTokens,
@@ -136,9 +134,11 @@ async function getEnvVariables() {
 
 async function setApprovals(sender, PROXY_ADDRESS, maxBalances) {
 
+    let gasPrice;
     for (const [index, token] of tokens.entries()) {
         console.log(`Approving proxy to use ${maxBalances[index]} ${token}`);
         const tokenContract = await IToken.at(tokenOraclePairs[token].token);
+        gasPrice = await web3.eth.getGasPrice();
         await tokenContract.approve(
             PROXY_ADDRESS,
             web3.utils.toWei(String(maxBalances[index])),
@@ -198,6 +198,6 @@ module.exports = async function(callback) {
     if (detectedNetworkId !== networkId) {
         throw 'Wrong network Id';
     }
-    
+
     main().then(() => callback()).catch(err => callback(err));
 }

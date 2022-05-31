@@ -15,9 +15,7 @@ module.exports = async function (deployer,network, accounts) {
 		deployer.deploy(Math);
 		deployer.link(Math, Factory);
 		deployer.link(Num, Factory);
-		let FACTORY;
-		await deployer.deploy(Factory).then(() => Factory.deployed())
-		.then(_instance => FACTORY = _instance.address);
+		deployer.deploy(Factory);
 	}
 	
 };
