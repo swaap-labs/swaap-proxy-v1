@@ -6,7 +6,7 @@ const Factory = artifacts.require("Factory");
 module.exports = async function (deployer,network, accounts) {
 
 	// Factory only deployed from test
-	if(network === undefined || network === "dev-fork" || network === "dev") {
+	if(network === undefined || network == "test" || network === "dev-fork" || network === "dev") {
 		deployer.deploy(Num);
 		deployer.link(Num, GeometricBrownianMotionOracle);
 		deployer.deploy(GeometricBrownianMotionOracle);
