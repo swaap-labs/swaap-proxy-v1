@@ -682,6 +682,9 @@ contract Proxy {
 
     function transferFromAll(address token, uint amount) internal {
         if (isNative(token)) {
+            // The 'amount' input is not used in the payable case in order to convert all the
+            // native token to wrapped native token. This is useful in function transferAll where only 
+            // one transfer is needed when a fraction of the wrapped tokens are used.
             IToken(wnative).deposit{value: msg.value}();
         } else {
             IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
