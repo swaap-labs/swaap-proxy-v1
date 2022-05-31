@@ -24,11 +24,11 @@ const TVL = 10000;
 // pool parameters
 const params = [
     publicSwap = true,
-    priceStatisticsLookbackInRound = '4',
-    dynamicCoverageFeesZ = web3.utils.toWei('0.6'),
+    priceStatisticsLookbackInRound = '5',
+    dynamicCoverageFeesZ = web3.utils.toWei('1.5'),
     swapFee = web3.utils.toWei('0.00025'),
-    priceStatisticsLookbackInSec = '3600',
-    dynamicCoverageFeesHorizon = web3.utils.toWei('300'),
+    priceStatisticsLookbackInSec = '900',
+    dynamicCoverageFeesHorizon = web3.utils.toWei('60'),
 ];
 
 const isFinalized = true;
@@ -36,15 +36,16 @@ const isFinalized = true;
 const FACTORY_ADDRESS = process.env.FACTORY_ADDRESS_RINKEBY;
 const PROXY_ADDRESS = process.env.PROXY_ADDRESS_RINKEBY;
 const newController = process.env.NEW_CONTROLLER_RINKEBY;
+const gasPrice = process.env.GAS_PRICE_WEI;
 
 /* ---------------------------------------------------------------------------------------------- */
 
 async function main(){
 
     const [sender, FACTORY_ADDRESS, PROXY_ADDRESS] = await getEnvVariables();
-    
+
     const maxBalances = await getMaxBalancesGivenTVL();
-    
+
     await setApprovals(sender, PROXY_ADDRESS, maxBalances);
 
     // building bind tokens parameters
@@ -54,18 +55,8 @@ async function main(){
     const maxDeadline = Math.floor(Date.now()/1000) + 60*10;
 
     const proxy = await Proxy.at(PROXY_ADDRESS);
-    const poolAddress = await proxy.createBalancedPoolWithParams.call(
-        bindTokens,
-        params,
-        FACTORY_ADDRESS,
-        isFinalized,
-        maxDeadline,
-        {from: sender}
-    );
 
-    let gasPrice = await web3.eth.getGasPrice();
-
-    await proxy.createBalancedPoolWithParams(
+    const tx = await proxy.createBalancedPoolWithParams(
         bindTokens,
         params,
         FACTORY_ADDRESS,
@@ -73,10 +64,10 @@ async function main(){
         maxDeadline,
         {from: sender, gasPrice: gasPrice}
     );
+    const poolAddress = tx.logs[0].args[1]
+    console.log("pool's address:", poolAddress)
 
-    console.log(`Pool ${poolAddress} successfully created`);
-
-    const pool = await Pool.at(poolAddress); 
+    const pool = await Pool.at(poolAddress);
 
     // Set transfer ownership
     if(newController !== undefined && newController.length == 42) {
@@ -90,11 +81,11 @@ async function main(){
     console.log(`\n Pool's address: ${poolAddress}`);
 }
 
-// Gets maxAmountsIn of the non-leading tokens 
+// Gets maxAmountsIn of the non-leading tokens
 async function getMaxBalancesGivenTVL() {
     // sum of weights
     totalWeight = weights.reduce((partialSum, a) => partialSum + a, 0);
-    const slippageTolerance = 1.001; // 0.1%
+    const slippageTolerance = web3.utils.toBN(1010); // 1%
     let maximumBalances = [];
 
     for (const [index, token] of tokens.entries()) {
@@ -104,26 +95,30 @@ async function getMaxBalancesGivenTVL() {
         const oracleDecimals = (await tokenAggregator.decimals.call()).toNumber();
         const oraclePrice = ((await tokenAggregator.latestRoundData.call()).answer).toNumber();
 
-        let tokenMaxBalance = TVL * (10**(tokenDecimals+oracleDecimals)) * (weights[index]/totalWeight) / (oraclePrice);
+        let tokenMaxBalance = web3.utils.toBN(TVL)
+			.mul(web3.utils.toBN(10).pow(web3.utils.toBN(tokenDecimals+oracleDecimals)))
+			.mul(web3.utils.toBN(web3.utils.toBN(weights[index])))
+        	.div(web3.utils.toBN(oraclePrice).mul(web3.utils.toBN(totalWeight)))
 
         if(index > 0) {
-            tokenMaxBalance = tokenMaxBalance * slippageTolerance;
+            tokenMaxBalance = tokenMaxBalance.mul(slippageTolerance).div(web3.utils.toBN(1000));
         }
-        maximumBalances.push(Math.floor(tokenMaxBalance));
+
+        maximumBalances.push(tokenMaxBalance);
     }
 
     return maximumBalances;
 }
 
 async function getEnvVariables() {
-    const accounts = await web3.eth.getAccounts();        
+    const accounts = await web3.eth.getAccounts();
     const ACCOUNT_INDEX = Number(process.env.ACCOUNT_INDEX);
     if(ACCOUNT_INDEX === undefined){
         throw 'Account index is undefined';
     }
     // if account index is setup, truffle will set this address as account 0
     const sender = accounts[0];
-    
+
     if(FACTORY_ADDRESS == undefined){
         throw 'Factory address is undefined';
     }
@@ -137,21 +132,18 @@ async function getEnvVariables() {
 
 async function setApprovals(sender, PROXY_ADDRESS, maxBalances) {
 
-    let gasPrice;
     for (const [index, token] of tokens.entries()) {
         const tokenContract = await IToken.at(tokenOraclePairs[token].token);
-        const tokenDecimals = (await tokenContract.decimals.call()).toNumber();
-        const balanceInDecimals = maxBalances[index] / (10**tokenDecimals);
+        const balanceInDecimals = maxBalances[index];
         console.log(`Approving proxy to use ${balanceInDecimals} ${token}`);
-        gasPrice = await web3.eth.getGasPrice();
 
         await tokenContract.approve(
             PROXY_ADDRESS,
-            '0x' + maxBalances[index].toString(16),
+            balanceInDecimals,
             {from: sender, gasPrice: gasPrice}
         );
     }
-    
+
     console.log("Successfully approved all tokens");
 
 }
@@ -162,7 +154,7 @@ function buildBindTokens(maxBalances) {
     for (const [index, token] of tokens.entries()) {
         const bindToken = [
             tokenOraclePairs[token].token,
-            '0x' + (maxBalances[index]).toString(16),
+            maxBalances[index],
             web3.utils.toWei(String(weights[index])),
             tokenOraclePairs[token].oracles[quote]
         ];
