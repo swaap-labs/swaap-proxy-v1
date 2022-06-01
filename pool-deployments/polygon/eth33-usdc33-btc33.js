@@ -38,6 +38,8 @@ const PROXY_ADDRESS = process.env.PROXY_ADDRESS_POLYGON;
 const newController = process.env.NEW_CONTROLLER_POLYGON;
 const gasPrice = process.env.GAS_PRICE_WEI;
 
+LOG_NEW_POOL_SIGN = "0x8ccec77b0cb63ac2cafd0f5de8cdfadab91ce656d262240ba8a6343bccc5f945"
+
 /* ---------------------------------------------------------------------------------------------- */
 
 async function main(){
@@ -64,7 +66,17 @@ async function main(){
         maxDeadline,
         {from: sender, gasPrice: gasPrice}
     );
-    const poolAddress = tx.logs[0].args[1]
+    let poolAddress;
+    for (let i = 0; i < tx.receipt.rawLogs.length; i++) {
+    	if (tx.receipt.rawLogs[i].topics[0] == LOG_NEW_POOL_SIGN) {
+    		poolAddress = "0x" + tx.receipt.rawLogs[i].topics[2].slice(26);
+    		break;
+    	}
+    }
+
+    if (poolAddress == undefined) {
+    	throw ("null pool's address")
+    }
     console.log("pool's address:", poolAddress)
 
     const pool = await Pool.at(poolAddress);
