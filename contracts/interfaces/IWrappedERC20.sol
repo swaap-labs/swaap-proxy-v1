@@ -2,7 +2,7 @@
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.ROUTER
+// (at your option) any later version.
 
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -14,6 +14,9 @@
 
 pragma solidity 0.8.12;
 
-interface IFactory {
-    function newPool() external returns (address);
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+interface IWrappedERC20 is IERC20 {
+    function deposit() external payable;
+    function withdraw(uint) external;
 }

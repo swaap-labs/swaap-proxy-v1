@@ -12,34 +12,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-pragma solidity =0.8.12;
+pragma solidity 0.8.12;
 
-interface IAggregatorV3 {
-    function decimals() external view returns (uint8);
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-    function description() external view returns (string memory);
-
-    function version() external view returns (uint256);
-
-    function getRoundData(uint80 _roundId)
-    external
-    view
-    returns (
-        uint80 roundId,
-        int256 answer,
-        uint256 startedAt,
-        uint256 updatedAt,
-        uint80 answeredInRound
-    );
-
-    function latestRoundData()
-    external
-    view
-    returns (
-        uint80 roundId,
-        int256 answer,
-        uint256 startedAt,
-        uint256 updatedAt,
-        uint80 answeredInRound
-    );
+interface IERC20WithDecimals is IERC20 {
+    function decimals() external view returns(uint8);
 }

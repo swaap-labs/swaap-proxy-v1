@@ -15,10 +15,16 @@
 pragma solidity 0.8.12;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "./interfaces/IPool.sol";
-import "./interfaces/IFactory.sol";
-import "./interfaces/IToken.sol";
-import "./interfaces/IAggregatorV3.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+import "@swaap-labs/swaap-core-v1/contracts/interfaces/IFactory.sol";
+import "@swaap-labs/swaap-core-v1/contracts/interfaces/IPool.sol";
+import "@swaap-labs/swaap-core-v1/contracts/structs/Struct.sol";
+import "@swaap-labs/swaap-core-v1/contracts/interfaces/IAggregatorV3.sol";
+
+import "./interfaces/IERC20WithDecimals.sol";
+import "./interfaces/IWrappedERC20.sol";
+
 
 contract Proxy {
 
@@ -245,7 +251,7 @@ contract Proxy {
             for (uint j; j < swapSequences[i].length;) {
                 Swap memory swap = swapSequences[i][j];
 
-                IToken SwapTokenIn = IToken(swap.tokenIn);
+                IERC20WithDecimals SwapTokenIn = IERC20WithDecimals(swap.tokenIn);
                 if (j >= 1) {
                     // Makes sure that on the second swap the output of the first was used
                     // so there is not intermediate token leftover
@@ -317,7 +323,7 @@ contract Proxy {
 
             if (swapSequences[i].length == 1) {
                 Swap memory swap = swapSequences[i][0];
-                IToken SwapTokenIn = IToken(swap.tokenIn);
+                IERC20WithDecimals SwapTokenIn = IERC20WithDecimals(swap.tokenIn);
 
                 IPool pool = IPool(swap.pool);
                 if (SwapTokenIn.allowance(address(this), swap.pool) > 0) {
@@ -361,7 +367,7 @@ contract Proxy {
                 require(tokenAmountInFirstSwap <= firstSwap.limitAmount, "ERR_LIMIT_IN");
 
                 //// Buy intermediateTokenAmount of token B with A in the first pool
-                IToken FirstSwapTokenIn = IToken(firstSwap.tokenIn);
+                IERC20WithDecimals FirstSwapTokenIn = IERC20WithDecimals(firstSwap.tokenIn);
                 if (FirstSwapTokenIn.allowance(address(this), firstSwap.pool) > 0) {
                     FirstSwapTokenIn.approve(firstSwap.pool, 0);
                 }
@@ -375,7 +381,7 @@ contract Proxy {
                 );
 
                 //// Buy the final amount of token C desired
-                IToken SecondSwapTokenIn = IToken(secondSwap.tokenIn);
+                IERC20WithDecimals SecondSwapTokenIn = IERC20WithDecimals(secondSwap.tokenIn);
                 if (SecondSwapTokenIn.allowance(address(this), secondSwap.pool) > 0) {
                     SecondSwapTokenIn.approve(secondSwap.pool, 0);
                 }
@@ -433,13 +439,13 @@ contract Proxy {
 
         
         uint balance_i;
-        uint8 decimals_0 = IAggregatorV3(bindTokens[0].oracle).decimals() + IToken(bindTokens[0].token).decimals();
+        uint8 decimals_0 = IAggregatorV3(bindTokens[0].oracle).decimals() + IERC20WithDecimals(bindTokens[0].token).decimals();
         for(uint i=1; i < bindTokensNumber;){
             //    balance_i = (oraclePrice_j / oraclePrice_i) * (balance_j * weight_i) / (weight_j)
             // => balance_i = (relativePrice_j_i * balance_j * weight_i) / (weight_j)
             balance_i = getTokenRelativePrice(
                 oraclePrices[i],
-                IAggregatorV3(bindTokens[i].oracle).decimals() + IToken(bindTokens[i].token).decimals(),
+                IAggregatorV3(bindTokens[i].oracle).decimals() + IERC20WithDecimals(bindTokens[i].token).decimals(),
                 oraclePrices[0],
                 decimals_0
             );
@@ -571,7 +577,7 @@ contract Proxy {
         if (finalize) {
             // This will finalize the pool and send the pool shares to the caller
             IPool(pool).finalize();
-            IToken(pool).transfer(msg.sender, IToken(pool).balanceOf(address(this)));
+            IERC20WithDecimals(pool).transfer(msg.sender, IERC20WithDecimals(pool).balanceOf(address(this)));
         }
 
         /*
@@ -581,7 +587,7 @@ contract Proxy {
             In that case we should either set the controller in pool.finalize(msg.sender)
             Or use Auth like in BActions' proxy
         */ 
-        IPool(pool).setController(msg.sender);
+        IPool(pool).setControllerAndTransfer(msg.sender);
     }
 
     /**
@@ -636,7 +642,7 @@ contract Proxy {
             unchecked{++i;}
         }
 
-        IToken(pool).transfer(msg.sender, IToken(pool).balanceOf(address(this)));
+        IERC20WithDecimals(pool).transfer(msg.sender, IERC20WithDecimals(pool).balanceOf(address(this)));
 
     }
 
@@ -675,7 +681,7 @@ contract Proxy {
 
         poolAmountOut = IPool(pool).joinswapExternAmountInMMM(tokenIn, tokenAmountIn, minPoolAmountOut);
         
-        IToken(pool).transfer(msg.sender, IToken(pool).balanceOf(address(this)));
+        IERC20WithDecimals(pool).transfer(msg.sender, IERC20WithDecimals(pool).balanceOf(address(this)));
         
         return poolAmountOut;
     }
@@ -685,7 +691,7 @@ contract Proxy {
             // The 'amount' input is not used in the payable case in order to convert all the
             // native token to wrapped native token. This is useful in function transferAll where only 
             // one transfer is needed when a fraction of the wrapped tokens are used.
-            IToken(wnative).deposit{value: msg.value}();
+            IWrappedERC20(wnative).deposit{value: msg.value}();
         } else {
             IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
         }
@@ -693,7 +699,7 @@ contract Proxy {
 
     function getBalance(address token) internal view returns (uint) {
         if (isNative(token)) {
-            return IToken(wnative).balanceOf(address(this));
+            return IWrappedERC20(wnative).balanceOf(address(this));
         } else {
             return IERC20(token).balanceOf(address(this));
         }
@@ -702,7 +708,7 @@ contract Proxy {
     function transferAll(address token, uint amount) internal {
         if (amount != 0) {
             if (isNative(token)) {
-                IToken(wnative).withdraw(amount);
+                IWrappedERC20(wnative).withdraw(amount);
                 payable(msg.sender).transfer(amount);
             } else {
                 IERC20(token).safeTransfer(msg.sender, amount);

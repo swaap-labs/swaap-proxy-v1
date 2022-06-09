@@ -4,7 +4,7 @@
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// This program is distributed in the hope that it will be useful,
+// This program is disstributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
@@ -14,17 +14,4 @@
 
 pragma solidity =0.8.12;
 
-interface IAggregatorV3 {
-    function decimals() external view returns (uint8);
-
-    function latestRoundData()
-    external
-    view
-    returns (
-        uint80 roundId,
-        int256 answer,
-        uint256 startedAt,
-        uint256 updatedAt,
-        uint80 answeredInRound
-    );
-}
+import "@swaap-labs/swaap-core-v1/contracts/Num.sol";
