@@ -3,7 +3,7 @@
 ## Running tests
 1. Run ganache
 ```bash
-ganache --fork.network mainnet
+ganache --fork.network mainnet --chain.allowUnlimitedContractSize -l 0x4C4B400
 ```
 
 2. Run truffle tests
