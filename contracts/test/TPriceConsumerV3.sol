@@ -11,11 +11,11 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-pragma solidity 0.8.12;
+pragma solidity =0.8.12;
 
 contract TPriceConsumerV3 {
 
-    int256 answer;
+    int256 private answer;
     function latestAnswer() external view returns (int256) {
         return answer;
     }

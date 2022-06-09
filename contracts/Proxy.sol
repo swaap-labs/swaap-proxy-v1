@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-pragma solidity 0.8.12;
+pragma solidity =0.8.12;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -74,7 +74,7 @@ contract Proxy {
         _;
     }
 
-    bool locked;
+    bool internal locked;
     modifier _lock() {
         require(!locked, "ERR_REENTRANCY");
         locked = true;
@@ -119,18 +119,18 @@ contract Proxy {
         for (uint i; i < swaps.length;) {
             Swap memory swap = swaps[i];
 
-            IERC20 SwapTokenIn = IERC20(swap.tokenIn);
+            IERC20 swapTokenIn = IERC20(swap.tokenIn);
             IPool pool = IPool(swap.pool);
 
             // required for some ERC20 such as USDT before changing the allowed transferable tokens
             // https://github.com/d-xo/weird-erc20
-            if (SwapTokenIn.allowance(address(this), swap.pool) > 0) {
-                SwapTokenIn.approve(swap.pool, 0);
+            if (swapTokenIn.allowance(address(this), swap.pool) > 0) {
+                swapTokenIn.approve(swap.pool, 0);
             }
 
             // approving type(uint).max may result an error for some ERC20 tokens
             // https://github.com/d-xo/weird-erc20
-            SwapTokenIn.approve(swap.pool, swap.swapAmount);
+            swapTokenIn.approve(swap.pool, swap.swapAmount);
 
             (uint tokenAmountOut,) = pool.swapExactAmountInMMM(
                 swap.tokenIn,
@@ -178,18 +178,18 @@ contract Proxy {
         for (uint i; i < swaps.length;) {
             Swap memory swap = swaps[i];
 
-            IERC20 SwapTokenIn = IERC20(swap.tokenIn);
+            IERC20 swapTokenIn = IERC20(swap.tokenIn);
             IPool pool = IPool(swap.pool);
 
             // required for some ERC20 such as USDT before changing the allowed transferable tokens
             // https://github.com/d-xo/weird-erc20
-            if (SwapTokenIn.allowance(address(this), swap.pool) > 0) {
-                SwapTokenIn.approve(swap.pool, 0);
+            if (swapTokenIn.allowance(address(this), swap.pool) > 0) {
+                swapTokenIn.approve(swap.pool, 0);
             }
 
             // approving type(uint).max may result an error for some ERC20 tokens
             // https://github.com/d-xo/weird-erc20
-            SwapTokenIn.approve(swap.pool, swap.limitAmount);
+            swapTokenIn.approve(swap.pool, swap.limitAmount);
 
             (uint tokenAmountIn,) = pool.swapExactAmountOutMMM(
                 swap.tokenIn,
@@ -250,17 +250,17 @@ contract Proxy {
             for (uint j; j < swapSequences[i].length;) {
                 Swap memory swap = swapSequences[i][j];
 
-                IERC20WithDecimals SwapTokenIn = IERC20WithDecimals(swap.tokenIn);
+                IERC20WithDecimals swapTokenIn = IERC20WithDecimals(swap.tokenIn);
                 if (j >= 1) {
                     // Makes sure that on the second swap the output of the first was used
                     // so there is not intermediate token leftover
                     swap.swapAmount = tokenAmountOut;
                 }
                 IPool pool = IPool(swap.pool);
-                if (SwapTokenIn.allowance(address(this), swap.pool) > 0) {
-                    SwapTokenIn.approve(swap.pool, 0);
+                if (swapTokenIn.allowance(address(this), swap.pool) > 0) {
+                    swapTokenIn.approve(swap.pool, 0);
                 }
-                SwapTokenIn.approve(swap.pool, swap.swapAmount);
+                swapTokenIn.approve(swap.pool, swap.swapAmount);
                 (tokenAmountOut,) = pool.swapExactAmountInMMM(
                     swap.tokenIn,
                     swap.swapAmount,
@@ -322,13 +322,13 @@ contract Proxy {
 
             if (swapSequences[i].length == 1) {
                 Swap memory swap = swapSequences[i][0];
-                IERC20WithDecimals SwapTokenIn = IERC20WithDecimals(swap.tokenIn);
+                IERC20WithDecimals swapTokenIn = IERC20WithDecimals(swap.tokenIn);
 
                 IPool pool = IPool(swap.pool);
-                if (SwapTokenIn.allowance(address(this), swap.pool) > 0) {
-                    SwapTokenIn.approve(swap.pool, 0);
+                if (swapTokenIn.allowance(address(this), swap.pool) > 0) {
+                    swapTokenIn.approve(swap.pool, 0);
                 }
-                SwapTokenIn.approve(swap.pool, swap.limitAmount);
+                swapTokenIn.approve(swap.pool, swap.limitAmount);
 
                 (tokenAmountInFirstSwap,) = pool.swapExactAmountOutMMM(
                     swap.tokenIn,
@@ -366,11 +366,11 @@ contract Proxy {
                 require(tokenAmountInFirstSwap <= firstSwap.limitAmount, "ERR_LIMIT_IN");
 
                 //// Buy intermediateTokenAmount of token B with A in the first pool
-                IERC20WithDecimals FirstSwapTokenIn = IERC20WithDecimals(firstSwap.tokenIn);
-                if (FirstSwapTokenIn.allowance(address(this), firstSwap.pool) > 0) {
-                    FirstSwapTokenIn.approve(firstSwap.pool, 0);
+                IERC20WithDecimals firstSwapTokenIn = IERC20WithDecimals(firstSwap.tokenIn);
+                if (firstSwapTokenIn.allowance(address(this), firstSwap.pool) > 0) {
+                    firstSwapTokenIn.approve(firstSwap.pool, 0);
                 }
-                FirstSwapTokenIn.approve(firstSwap.pool, tokenAmountInFirstSwap);
+                firstSwapTokenIn.approve(firstSwap.pool, tokenAmountInFirstSwap);
                 poolFirstSwap.swapExactAmountOutMMM(
                     firstSwap.tokenIn,
                     tokenAmountInFirstSwap,
@@ -380,11 +380,11 @@ contract Proxy {
                 );
 
                 //// Buy the final amount of token C desired
-                IERC20WithDecimals SecondSwapTokenIn = IERC20WithDecimals(secondSwap.tokenIn);
-                if (SecondSwapTokenIn.allowance(address(this), secondSwap.pool) > 0) {
-                    SecondSwapTokenIn.approve(secondSwap.pool, 0);
+                IERC20WithDecimals secondSwapTokenIn = IERC20WithDecimals(secondSwap.tokenIn);
+                if (secondSwapTokenIn.allowance(address(this), secondSwap.pool) > 0) {
+                    secondSwapTokenIn.approve(secondSwap.pool, 0);
                 }
-                    SecondSwapTokenIn.approve(secondSwap.pool, intermediateTokenAmount);
+                    secondSwapTokenIn.approve(secondSwap.pool, intermediateTokenAmount);
 
                 poolSecondSwap.swapExactAmountOutMMM(
                     secondSwap.tokenIn,
@@ -406,8 +406,8 @@ contract Proxy {
 
     /**
     * @notice Creates a balanced pool with customized parameters where oracle-spot-price == pool-spot-price
-    * @dev A pool is balanced if (balance_i * weight_j) / (balance_j * weight_i) = oraclePrice_j / oraclePrice_i, for all i != j
-    * as a result: balance_i = (oraclePrice_j * balance_j * weight_i) / (oraclePrice_i * weight_j)
+    * @dev A pool is balanced if (balanceI * weight_j) / (balance_j * weight_i) = oraclePrice_j / oraclePrice_i, for all i != j
+    * as a result: balanceI = (oraclePrice_j * balance_j * weight_i) / (oraclePrice_i * weight_j)
     * @param bindTokens Array containing the information of the tokens to bind [tokenAddress, balance, weight, oracleAddress]
     * @param params Customized parameters of the pool 
     * @param finalize Bool to finalize the pool or not
@@ -436,24 +436,23 @@ contract Proxy {
             unchecked {++i;}
         }
 
-        
-        uint balance_i;
-        uint8 decimals_0 = IAggregatorV3(bindTokens[0].oracle).decimals() + IERC20WithDecimals(bindTokens[0].token).decimals();
+        uint balanceI;
+        uint8 decimals0 = IAggregatorV3(bindTokens[0].oracle).decimals() + IERC20WithDecimals(bindTokens[0].token).decimals();
         for(uint i=1; i < bindTokensNumber;){
-            //    balance_i = (oraclePrice_j / oraclePrice_i) * (balance_j * weight_i) / (weight_j)
-            // => balance_i = (relativePrice_j_i * balance_j * weight_i) / (weight_j)
-            balance_i = getTokenRelativePrice(
+            //    balanceI = (oraclePrice_j / oraclePrice_i) * (balance_j * weight_i) / (weight_j)
+            // => balanceI = (relativePrice_j_i * balance_j * weight_i) / (weight_j)
+            balanceI = getTokenRelativePrice(
                 oraclePrices[i],
                 IAggregatorV3(bindTokens[i].oracle).decimals() + IERC20WithDecimals(bindTokens[i].token).decimals(),
                 oraclePrices[0],
-                decimals_0
+                decimals0
             );
             
-            balance_i = bmul(balance_i, bindTokens[0].balance);
-            balance_i = bmul(balance_i, bindTokens[i].weight);
-            balance_i = bdiv(balance_i, bindTokens[0].weight);
-            require(balance_i <= bindTokens[i].balance, "ERR_LIMIT_IN");
-            bindTokens[i].balance = balance_i;
+            balanceI = bmul(balanceI, bindTokens[0].balance);
+            balanceI = bmul(balanceI, bindTokens[i].weight);
+            balanceI = bdiv(balanceI, bindTokens[0].weight);
+            require(balanceI <= bindTokens[i].balance, "ERR_LIMIT_IN");
+            bindTokens[i].balance = balanceI;
             unchecked {++i;}
         }
     
@@ -481,11 +480,12 @@ contract Proxy {
         IFactory factory,
         bool finalize,
         uint deadline
-    ) 
-        _beforeDeadline(deadline)
-        _lock
-        external payable
-        returns (address poolAddress)
+    )
+    external
+    _beforeDeadline(deadline)
+    _lock
+    payable
+    returns (address poolAddress)
     {
         poolAddress = _createPoolWithParams(
                 bindTokens,
@@ -742,25 +742,25 @@ contract Proxy {
     }
 
     function getTokenRelativePrice(
-        uint256 price_1, uint8 decimal_1,
-        uint256 price_2, uint8 decimal_2
+        uint256 price1, uint8 decimal1,
+        uint256 price2, uint8 decimal2
     )
     internal
     pure
     returns (uint256) {
         // we consider tokens price to be > 0
-        uint256 rawDiv = bdiv(price_2, price_1);
-        if (decimal_1 == decimal_2) {
+        uint256 rawDiv = bdiv(price2, price1);
+        if (decimal1 == decimal2) {
             return rawDiv;
-        } else if (decimal_1 > decimal_2) {
+        } else if (decimal1 > decimal2) {
             return bmul(
                 rawDiv,
-                10**(decimal_1 - decimal_2)*ONE
+                10**(decimal1 - decimal2)*ONE
             );
         } else {
             return bdiv(
                 rawDiv,
-                10**(decimal_2 - decimal_1)*ONE
+                10**(decimal2 - decimal1)*ONE
             );
         }
     }

@@ -15,11 +15,11 @@ pragma solidity =0.8.12;
 
 contract TConstantOracle {
 
-    uint256 timestamp;
+    uint256 private timestamp;
 
-    uint80 latestRoundId = 1;
-    uint8 _decimals;
-    int256 _precision = 100000000;
+    uint80 private latestRoundId = 1;
+    uint8 private _decimals;
+    int256 private _precision = 100000000;
 
     mapping(uint80 => int256) public prices;
 
