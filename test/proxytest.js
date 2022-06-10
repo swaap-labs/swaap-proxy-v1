@@ -10,8 +10,8 @@ const TConstantOracle = artifacts.require('TConstantOracle');
 
 contract('Proxy - BatchSwap', async (accounts) => {
     
-    let network = 'ethereum';
-    let wnative = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'; // weth on ethereum
+    // wnative is considered to be WETH, even if the tests are forking polygon
+    let wnative = '0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270'; // wmatic on polygon
     const NATIVE_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
     let wnative_contract;
 
@@ -33,6 +33,11 @@ contract('Proxy - BatchSwap', async (accounts) => {
     let dai;
     let wbtc;
     const errorDelta = 10 ** -4;
+
+    // Agrregators on polygon's mainnet
+    const ETHAggregatorAddress = '0xF9680D99D6C9589e2a93a78A04A279e509205945';
+    const DAIAggregatorAddress = '0x4746DeC9e833A82EC7C2C1356372CcF2cfcD2F3D';
+    const BTCAggregatorAddress = '0xc907E116054Ad103354f2D350FD2514433D57F6f';
 
     async function assertTraderBalances() {
         let ttraderBalance = fromWei(await weth.balanceOf.call(ttrader));
@@ -118,10 +123,12 @@ contract('Proxy - BatchSwap', async (accounts) => {
 
         console.log("Creating Pools ...");
 
-        tpool1 = await createBalancedPool(network, 15000, 45000000, 1000, WETH, DAI, WBTC, admin);
-        cpool1 = await createBalancedPool(network, 15000, 45000000, 1000, WETH, DAI, WBTC, admin);
-        tpool2 = await createBalancedPool(network, 7500, 22500000, 500, WETH, DAI, WBTC, admin);
-        cpool2 = await createBalancedPool(network, 7500, 22500000, 500, WETH, DAI, WBTC, admin);
+        let aggregatorAddresses = [ETHAggregatorAddress, DAIAggregatorAddress, BTCAggregatorAddress];
+        console.log(WETH);
+        tpool1 = await createBalancedPool([15000, 45000000, 1000], [WETH, DAI, WBTC], aggregatorAddresses);
+        cpool1 = await createBalancedPool([15000, 45000000, 1000], [WETH, DAI, WBTC], aggregatorAddresses);
+        tpool2 = await createBalancedPool([7500, 22500000, 500], [WETH, DAI, WBTC], aggregatorAddresses);
+        cpool2 = await createBalancedPool([7500, 22500000, 500], [WETH, DAI, WBTC], aggregatorAddresses);
 
         console.log("Pools deployed");
 
@@ -351,23 +358,6 @@ contract('Proxy - BatchSwap', async (accounts) => {
         await assertProxyBalances();
     });
 
-    // dev network should be a ganache client forked from ethereum or polygon's mainnet
-    let ETHAggregatorAddress;
-    let DAIAggregatorAddress;
-    let BTCAggregatorAddress;
-    
-    if (network === 'ethereum') {
-        // Agrregators on ethereum's mainnet
-        ETHAggregatorAddress = '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419';
-        DAIAggregatorAddress = '0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9';
-        BTCAggregatorAddress = '0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c';
-    } else {
-        // Agrregators on polygon's mainnet
-        ETHAggregatorAddress = '0xF9680D99D6C9589e2a93a78A04A279e509205945';
-        DAIAggregatorAddress = '0x4746DeC9e833A82EC7C2C1356 372CcF2cfcD2F3D';
-        BTCAggregatorAddress = '0xc907E116054Ad103354f2D350FD2514433D57F6f';
-    }
-    
     let pool5;
     it('Create & finalize a pool without any parameter', async () => {
         // bindToken = [tokenAddress, balance, weight, oracleAddress]
@@ -448,11 +438,10 @@ contract('Proxy - BatchSwap', async (accounts) => {
         assert.equal((await pool6.isPublicSwap.call()).toString(), 'true');
 
         let coverageParams = await pool6.getCoverageParameters.call()
-        assert.equal(await pool6.getSwapFee.call(), toWei('0.1'));
-        assert.equal(coverageParams[0], toWei('10'));
-        assert.equal(coverageParams[1], toWei('50'));
-        assert.equal(coverageParams[2], 5);
-        assert.equal(coverageParams[3], 2000);
+        assert.equal(coverageParams.dynamicCoverageFeesZ, toWei('10'));
+        assert.equal(coverageParams.dynamicCoverageFeesHorizon, toWei('50'));
+        assert.equal(coverageParams.priceStatisticsLBInRound, 5);
+        assert.equal(coverageParams.priceStatisticsLBInSec, 2000);
 
         await assertProxyBalances();
     });
@@ -522,11 +511,12 @@ contract('Proxy - BatchSwap', async (accounts) => {
         assert.equal(poolTokenBalance, toWei('100'));
 
         let coverageParams = await balancedPool.getCoverageParameters.call()
+
         assert.equal(await balancedPool.getSwapFee.call(), toWei('0.1'));
-        assert.equal(coverageParams[0], toWei('10'));
-        assert.equal(coverageParams[1], toWei('50'));
-        assert.equal(coverageParams[2], 5);
-        assert.equal(coverageParams[3], 2000);
+        assert.equal(coverageParams.dynamicCoverageFeesZ, toWei('10'));
+        assert.equal(coverageParams.dynamicCoverageFeesHorizon, toWei('50'));
+        assert.equal(coverageParams.priceStatisticsLBInRound, 5);
+        assert.equal(coverageParams.priceStatisticsLBInSec, 2000);
 
         await assertProxyBalances();
     });

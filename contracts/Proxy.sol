@@ -24,7 +24,6 @@ import "@swaap-labs/swaap-core-v1/contracts/interfaces/IAggregatorV3.sol";
 import "./interfaces/IERC20WithDecimals.sol";
 import "./interfaces/IWrappedERC20.sol";
 
-
 contract Proxy {
 
     using SafeERC20 for IERC20;
@@ -581,7 +580,7 @@ contract Proxy {
 
         /*
         NOTES:
-            If we add "require(!finalized && no bound tokens)" for Pool.setController(address manager)
+            If we add "require(!finalized && no bound tokens)" for Pool.setControllerAndTransfer(address manager)
             The proxy cannot transfer the controller to the msg.sender
             In that case we should either set the controller in pool.finalize(msg.sender)
             Or use Auth like in BActions' proxy
