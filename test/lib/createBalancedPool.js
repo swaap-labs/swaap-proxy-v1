@@ -3,7 +3,7 @@ const Pool = artifacts.require('Pool');
 const AggregatorV3Interface = artifacts.require('AggregatorV3Interface');
 const web3 = require('web3')
 const { toWei } = web3.utils;
-const TToken = artifacts.require('TToken');
+const IERC20WithDecimals = artifacts.require('IERC20WithDecimals');
 const MAX = web3.utils.toTwosComplement(-1);
 
 async function createBalancedPool(tokenBalances, tokensAddresses, aggregatorsAddresses)
@@ -30,7 +30,7 @@ async function createBalancedPool(tokenBalances, tokensAddresses, aggregatorsAdd
     }
 
     for (let [i, tokenAddress] of tokensAddresses.entries()) {
-        let tokenContract = await TToken.at(tokenAddress); 
+        let tokenContract = await IERC20WithDecimals.at(tokenAddress);
         await tokenContract.approve(POOL, MAX);
         await pool.bindMMM(tokenAddress, toWei(tokenBalances[i].toString()), toWei(weights[i].toString()), aggregatorsAddresses[i]);
     }

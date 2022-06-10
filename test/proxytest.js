@@ -3,6 +3,7 @@ const Factory = artifacts.require('Factory');
 const Pool = artifacts.require('Pool');
 const Proxy = artifacts.require('Proxy');
 const TToken = artifacts.require('TToken');
+const IWrappedERC20 = artifacts.require('IWrappedERC20');
 const AggregatorV3Interface = artifacts.require('AggregatorV3Interface');
 const Decimal = require('decimal.js');
 const { createBalancedPool } = require('./lib/createBalancedPool');
@@ -87,7 +88,7 @@ contract('Proxy - BatchSwap', async (accounts) => {
         factory = await Factory.deployed();
         proxy = await Proxy.new(wnative);
         
-        wnative_contract = await TToken.at(wnative);
+        wnative_contract = await IWrappedERC20.at(wnative);
 
         await Promise.all([
             TToken.new('Wrapped Ether', 'WETH', 18),

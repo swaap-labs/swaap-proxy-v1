@@ -1,7 +1,7 @@
 const { tokenOraclePairs } = require('./token-oracle-pairs');
 
-const IAggregatorV3 = artifacts.require("IAggregatorV3");
-const IToken = artifacts.require("IToken");
+const AggregatorV3Interface = artifacts.require("AggregatorV3Interface");
+const IERC20WithDecimals = artifacts.require("IERC20WithDecimals");
 
 const Pool = artifacts.require("Pool");
 const Proxy = artifacts.require("Proxy");
@@ -101,9 +101,9 @@ async function getMaxBalancesGivenTVL() {
     let maximumBalances = [];
 
     for (const [index, token] of tokens.entries()) {
-        const tokenContract = await IToken.at(tokenOraclePairs[token].token);
+        const tokenContract = await IERC20WithDecimals.at(tokenOraclePairs[token].token);
         const tokenDecimals = (await tokenContract.decimals.call()).toNumber();
-        const tokenAggregator = await IAggregatorV3.at(tokenOraclePairs[token].oracles[quote]);
+        const tokenAggregator = await AggregatorV3Interface.at(tokenOraclePairs[token].oracles[quote]);
         const oracleDecimals = (await tokenAggregator.decimals.call()).toNumber();
         const oraclePrice = ((await tokenAggregator.latestRoundData.call()).answer).toNumber();
 
@@ -145,7 +145,7 @@ async function getEnvVariables() {
 async function setApprovals(sender, PROXY_ADDRESS, maxBalances) {
 
     for (const [index, token] of tokens.entries()) {
-        const tokenContract = await IToken.at(tokenOraclePairs[token].token);
+        const tokenContract = await IERC20WithDecimals.at(tokenOraclePairs[token].token);
         const balanceInDecimals = maxBalances[index];
         console.log(`Approving proxy to use ${balanceInDecimals} ${token}`);
 
@@ -182,10 +182,10 @@ async function assertParameters(pool) {
 
     let coverageParams = await pool.getCoverageParameters.call()
     assert.equal((await pool.getSwapFee.call()).toString(), params[3]); // swap fee
-    assert.equal(coverageParams[0].toString(), params[2]); // dynamicCoverageFeesZ
-    assert.equal(coverageParams[1].toString(), params[5]); // dynamicCoverageFeesHorizon
-    assert.equal(coverageParams[2].toString(), params[1]); // priceStatisticsLookbackInRound
-    assert.equal(coverageParams[3].toString(), params[4]); // priceStatisticsLookbackInSec
+    assert.equal(coverageParams.dynamicCoverageFeesZ.toString(), params[2]); // dynamicCoverageFeesZ
+    assert.equal(coverageParams.dynamicCoverageFeesHorizon.toString(), params[5]); // dynamicCoverageFeesHorizon
+    assert.equal(coverageParams.priceStatisticsLBInRound.toString(), params[1]); // priceStatisticsLookbackInRound
+    assert.equal(coverageParams.priceStatisticsLBInSec.toString(), params[4]); // priceStatisticsLookbackInSec
     assert.equal((await pool.isPublicSwap.call()), params[0]) // isPublic
     assert.equal((await pool.isFinalized.call()), isFinalized); // isFinalized
 
@@ -194,7 +194,7 @@ async function assertParameters(pool) {
         const weight = web3.utils.fromWei(await pool.getDenormalizedWeight.call(tokenOraclePairs[token].token));
         const oracle = await pool.getTokenPriceOracle.call(tokenOraclePairs[token].token);
         
-        const tokenAggregator = await IAggregatorV3.at(tokenOraclePairs[token].oracles[quote]);
+        const tokenAggregator = await AggregatorV3Interface.at(tokenOraclePairs[token].oracles[quote]);
         const oracleDecimals = await tokenAggregator.decimals();
         const oraclePrice = (await pool.getTokenOracleInitialPrice.call(tokenOraclePairs[token].token)).toNumber() / (10**oracleDecimals);
 
