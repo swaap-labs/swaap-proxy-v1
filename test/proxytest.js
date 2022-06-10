@@ -125,7 +125,7 @@ contract('Proxy - BatchSwap', async (accounts) => {
         console.log("Creating Pools ...");
 
         let aggregatorAddresses = [ETHAggregatorAddress, DAIAggregatorAddress, BTCAggregatorAddress];
-        console.log(WETH);
+
         tpool1 = await createBalancedPool([15000, 45000000, 1000], [WETH, DAI, WBTC], aggregatorAddresses);
         cpool1 = await createBalancedPool([15000, 45000000, 1000], [WETH, DAI, WBTC], aggregatorAddresses);
         tpool2 = await createBalancedPool([7500, 22500000, 500], [WETH, DAI, WBTC], aggregatorAddresses);
@@ -254,9 +254,9 @@ contract('Proxy - BatchSwap', async (accounts) => {
         let batchSwap = [swap1, swap2, swap3];
 
         // batchSwapExactIn(swaps[], tokenIn, tokenOut, totalAmountIn(= sum of tokenIn), minTotalAmountOut, deadline)
-        truffleAssert.reverts(
+        await truffleAssert.reverts(
             proxy.batchSwapExactIn(batchSwap, WETH, DAI, toWei('1.75'), toWei('1750'), 0, { from: ttrader }),
-            'ERR_PASSED_DEADLINE',
+            'PROOXY#01',
         );
     });
 

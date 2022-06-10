@@ -13,6 +13,8 @@
 
 pragma solidity =0.8.12;
 
+import "./ProxyErrors.sol";
+
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
@@ -69,13 +71,13 @@ contract Proxy {
     }
 
     modifier _beforeDeadline(uint deadline) {
-        require(block.timestamp <= deadline, "ERR_PASSED_DEADLINE");
+        _require(block.timestamp <= deadline, ProxyErr.PASSED_DEADLINE);
         _;
     }
 
     bool internal locked;
     modifier _lock() {
-        require(!locked, "ERR_REENTRANCY");
+        _require(!locked, ProxyErr.REENTRY);
         locked = true;
         _;
         locked = false;
@@ -144,7 +146,7 @@ contract Proxy {
             unchecked{++i;}
         }
 
-        require(totalAmountOut >= minTotalAmountOut, "ERR_LIMIT_OUT");
+        _require(totalAmountOut >= minTotalAmountOut, ProxyErr.LIMIT_OUT);
 
         transferAll(tokenOut, totalAmountOut);
         transferAll(tokenIn, getBalance(tokenIn));
@@ -202,7 +204,7 @@ contract Proxy {
             unchecked{++i;}
         }
 
-        require(totalAmountIn <= maxTotalAmountIn, "ERR_LIMIT_IN");
+        _require(totalAmountIn <= maxTotalAmountIn, ProxyErr.LIMIT_IN);
 
         transferAll(tokenOut, getBalance(tokenOut));
         transferAll(tokenIn, getBalance(tokenIn));
@@ -274,7 +276,7 @@ contract Proxy {
             unchecked{++i;}
         }
 
-        require(totalAmountOut >= minTotalAmountOut, "ERR_LIMIT_OUT");
+        _require(totalAmountOut >= minTotalAmountOut, ProxyErr.LIMIT_OUT);
 
         transferAll(tokenOut, totalAmountOut);
         transferAll(tokenIn, getBalance(tokenIn));
@@ -362,7 +364,7 @@ contract Proxy {
                     firstSwap.maxPrice
                 );
                 tokenAmountInFirstSwap = firstSwapResult.amount;
-                require(tokenAmountInFirstSwap <= firstSwap.limitAmount, "ERR_LIMIT_IN");
+                _require(tokenAmountInFirstSwap <= firstSwap.limitAmount, ProxyErr.LIMIT_IN);
 
                 //// Buy intermediateTokenAmount of token B with A in the first pool
                 IERC20WithDecimals firstSwapTokenIn = IERC20WithDecimals(firstSwap.tokenIn);
@@ -397,7 +399,7 @@ contract Proxy {
             unchecked{++i;}
         }
 
-        require(totalAmountIn <= maxTotalAmountIn, "ERR_LIMIT_IN");
+        _require(totalAmountIn <= maxTotalAmountIn, ProxyErr.LIMIT_IN);
 
         transferAll(tokenOut, getBalance(tokenOut));
         transferAll(tokenIn, getBalance(tokenIn));
@@ -430,7 +432,7 @@ contract Proxy {
         int256 price;
         for(uint i; i < bindTokensNumber;) {
             (,price,,,) = AggregatorV3Interface(bindTokens[i].oracle).latestRoundData();
-            require(price > 0, "ERR_NEGATIVE_PRICE");
+            _require(price > 0, ProxyErr.NEGATIVE_PRICE);
             oraclePrices[i] = uint(price);
             unchecked {++i;}
         }
@@ -450,7 +452,7 @@ contract Proxy {
             balanceI = bmul(balanceI, bindTokens[0].balance);
             balanceI = bmul(balanceI, bindTokens[i].weight);
             balanceI = bdiv(balanceI, bindTokens[0].weight);
-            require(balanceI <= bindTokens[i].balance, "ERR_LIMIT_IN");
+            _require(balanceI <= bindTokens[i].balance, ProxyErr.LIMIT_IN);
             bindTokens[i].balance = balanceI;
             unchecked {++i;}
         }
@@ -613,7 +615,7 @@ contract Proxy {
         for(uint i; i < tokensIn.length;) {
 
             if(tokensIn[i] == wnative && msg.value > 0) {
-                require(msg.value == maxAmountsIn[i], "ERR_BAD_MAX_AMOUNT_IN");
+                _require(msg.value == maxAmountsIn[i], ProxyErr.BAD_LIMIT_IN);
                 transferFromAll(NATIVE_ADDRESS, maxAmountsIn[i]);
             } else {
                 transferFromAll(tokensIn[i], maxAmountsIn[i]);
@@ -668,7 +670,7 @@ contract Proxy {
         transferFromAll(tokenIn, tokenAmountIn);
 
         if(tokenIn == NATIVE_ADDRESS) {
-            require(msg.value == tokenAmountIn, "ERR_BAD_AMOUNT_IN");
+            _require(msg.value == tokenAmountIn, ProxyErr.BAD_LIMIT_IN);
             tokenIn = wnative;
         }
         
