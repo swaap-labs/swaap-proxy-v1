@@ -1,6 +1,6 @@
 const Factory = artifacts.require('Factory');
 const Pool = artifacts.require('Pool');
-const IAggregatorV3 = artifacts.require('IAggregatorV3');
+const AggregatorV3Interface = artifacts.require('AggregatorV3Interface');
 const web3 = require('web3')
 const { toWei } = web3.utils;
 const TToken = artifacts.require('TToken');
@@ -16,7 +16,7 @@ async function createBalancedPool(tokenBalances, tokensAddresses, aggregatorsAdd
 
     let latestPrices = []
     for (const [index, aggregatorAddress] of aggregatorsAddresses.entries()) {
-        const tokenAggregator = await IAggregatorV3.at(aggregatorAddress);
+        const tokenAggregator = await AggregatorV3Interface.at(aggregatorAddress);
         latestPrices.push(((await tokenAggregator.latestRoundData.call()).answer).toNumber());
     }
 

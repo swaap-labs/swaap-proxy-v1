@@ -3,7 +3,7 @@ const Factory = artifacts.require('Factory');
 const Pool = artifacts.require('Pool');
 const Proxy = artifacts.require('Proxy');
 const TToken = artifacts.require('TToken');
-const TPriceConsumerV3 = artifacts.require('TPriceConsumerV3');
+const AggregatorV3Interface = artifacts.require('AggregatorV3Interface');
 const Decimal = require('decimal.js');
 const { createBalancedPool } = require('./lib/createBalancedPool');
 const TConstantOracle = artifacts.require('TConstantOracle');
@@ -75,9 +75,9 @@ contract('Proxy - BatchSwap', async (accounts) => {
     async function poolPriceDifference(balancedPool, tokenIn, oracleIn, tokenOut, oracleOut, maxPriceDifference) {
         let SP = Decimal(fromWei(await balancedPool.getSpotPriceSansFee(tokenIn, tokenOut)));
         
-        oracleIn = await TPriceConsumerV3.at(oracleIn);
-        oracleOut = await TPriceConsumerV3.at(oracleOut);
-        let OP = Decimal(fromWei(await oracleOut.latestAnswer.call())) / Decimal(fromWei(await oracleIn.latestAnswer.call()))
+        oracleIn = await AggregatorV3Interface.at(oracleIn);
+        oracleOut = await AggregatorV3Interface.at(oracleOut);
+        let OP = Decimal(fromWei((await oracleOut.latestRoundData.call())[1])) / Decimal(fromWei((await oracleIn.latestRoundData.call())[1]))
  
         let priceDifference = calcRelativeDiff(SP, OP);
         assert.isAtMost(priceDifference.toNumber(), maxPriceDifference);

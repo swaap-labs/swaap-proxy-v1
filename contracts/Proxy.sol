@@ -15,11 +15,11 @@ pragma solidity =0.8.12;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 import "@swaap-labs/swaap-core-v1/contracts/interfaces/IFactory.sol";
 import "@swaap-labs/swaap-core-v1/contracts/interfaces/IPool.sol";
 import "@swaap-labs/swaap-core-v1/contracts/structs/Struct.sol";
-import "@swaap-labs/swaap-core-v1/contracts/interfaces/IAggregatorV3.sol";
 
 import "./interfaces/IERC20WithDecimals.sol";
 import "./interfaces/IWrappedERC20.sol";
@@ -429,20 +429,20 @@ contract Proxy {
         uint256[] memory oraclePrices = new uint256[](bindTokensNumber);
         int256 price;
         for(uint i; i < bindTokensNumber;) {
-            (,price,,,) = IAggregatorV3(bindTokens[i].oracle).latestRoundData();
+            (,price,,,) = AggregatorV3Interface(bindTokens[i].oracle).latestRoundData();
             require(price > 0, "ERR_NEGATIVE_PRICE");
             oraclePrices[i] = uint(price);
             unchecked {++i;}
         }
 
         uint balanceI;
-        uint8 decimals0 = IAggregatorV3(bindTokens[0].oracle).decimals() + IERC20WithDecimals(bindTokens[0].token).decimals();
+        uint8 decimals0 = AggregatorV3Interface(bindTokens[0].oracle).decimals() + IERC20WithDecimals(bindTokens[0].token).decimals();
         for(uint i=1; i < bindTokensNumber;){
             //    balanceI = (oraclePrice_j / oraclePrice_i) * (balance_j * weight_i) / (weight_j)
             // => balanceI = (relativePrice_j_i * balance_j * weight_i) / (weight_j)
             balanceI = getTokenRelativePrice(
                 oraclePrices[i],
-                IAggregatorV3(bindTokens[i].oracle).decimals() + IERC20WithDecimals(bindTokens[i].token).decimals(),
+                AggregatorV3Interface(bindTokens[i].oracle).decimals() + IERC20WithDecimals(bindTokens[i].token).decimals(),
                 oraclePrices[0],
                 decimals0
             );
