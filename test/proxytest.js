@@ -207,11 +207,11 @@ contract('Proxy - BatchSwap', async (accounts) => {
 
         let params = [
             publicSwap = 'true',
+            swapFee = toWei('0.1'),
             priceStatisticsLookbackInRound = '5',
             dynamicCoverageFeesZ = toWei('10'),
-            swapFee = toWei('0.1'),
-            priceStatisticsLookbackInSec = '2000',
             dynamicCoverageFeesHorizon = toWei('50'),
+            priceStatisticsLookbackInSec = '2000'
         ];
 
         let bindTokens = [wethBind, usdcBind, wbtcBind];
@@ -410,11 +410,11 @@ contract('Proxy - BatchSwap', async (accounts) => {
 
         let params = [
             publicSwap = 'true',
+            swapFee = toWei('0.1'),
             priceStatisticsLookbackInRound = '5',
             dynamicCoverageFeesZ = toWei('10'),
-            swapFee = toWei('0.1'),
-            priceStatisticsLookbackInSec = '2000',
             dynamicCoverageFeesHorizon = toWei('50'),
+            priceStatisticsLookbackInSec = '2000'
         ];
 
         let bindTokens = [bindToken1, bindToken2, bindToken3];
@@ -438,10 +438,11 @@ contract('Proxy - BatchSwap', async (accounts) => {
         assert.equal(poolTokenBalance, toWei('0'));
         assert.equal((await pool6.isPublicSwap.call()).toString(), 'true');
 
-        let coverageParams = await pool6.getCoverageParameters.call()
+        let coverageParams = await pool6.getCoverageParameters.call();
+        assert.equal(await pool6.getSwapFee.call(), toWei('0.1'));
+        assert.equal(coverageParams.priceStatisticsLBInRound, 5);
         assert.equal(coverageParams.dynamicCoverageFeesZ, toWei('10'));
         assert.equal(coverageParams.dynamicCoverageFeesHorizon, toWei('50'));
-        assert.equal(coverageParams.priceStatisticsLBInRound, 5);
         assert.equal(coverageParams.priceStatisticsLBInSec, 2000);
 
         await assertProxyBalances();
@@ -484,11 +485,11 @@ contract('Proxy - BatchSwap', async (accounts) => {
 
         let params = [
             publicSwap = 'true',
+            swapFee = toWei('0.1'),
             priceStatisticsLookbackInRound = '5',
             dynamicCoverageFeesZ = toWei('10'),
-            swapFee = toWei('0.1'),
-            priceStatisticsLookbackInSec = '2000',
             dynamicCoverageFeesHorizon = toWei('50'),
+            priceStatisticsLookbackInSec = '2000',
         ];
 
         let bindTokens = [bindToken1, bindToken2, bindToken3];
@@ -514,9 +515,9 @@ contract('Proxy - BatchSwap', async (accounts) => {
         let coverageParams = await balancedPool.getCoverageParameters.call()
 
         assert.equal(await balancedPool.getSwapFee.call(), toWei('0.1'));
+        assert.equal(coverageParams.priceStatisticsLBInRound, 5);
         assert.equal(coverageParams.dynamicCoverageFeesZ, toWei('10'));
         assert.equal(coverageParams.dynamicCoverageFeesHorizon, toWei('50'));
-        assert.equal(coverageParams.priceStatisticsLBInRound, 5);
         assert.equal(coverageParams.priceStatisticsLBInSec, 2000);
 
         await assertProxyBalances();

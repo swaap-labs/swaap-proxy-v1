@@ -51,11 +51,11 @@ contract Proxy {
 
     struct Params {
         bool    publicSwap;
+        uint256 swapFee;
         uint8   priceStatisticsLookbackInRound;
         uint64  dynamicCoverageFeesZ;
-        uint256 swapFee;
-        uint256 priceStatisticsLookbackInSec;
         uint256 dynamicCoverageFeesHorizon;
+        uint256 priceStatisticsLookbackInSec;
     }
 
     struct BindToken {
@@ -511,9 +511,9 @@ contract Proxy {
         // setting the pool's parameters
         pool.setPublicSwap(params.publicSwap);
         pool.setSwapFee(params.swapFee);
+        pool.setPriceStatisticsLookbackInRound(params.priceStatisticsLookbackInRound);
         pool.setDynamicCoverageFeesZ(params.dynamicCoverageFeesZ);
         pool.setDynamicCoverageFeesHorizon(params.dynamicCoverageFeesHorizon);
-        pool.setPriceStatisticsLookbackInRound(params.priceStatisticsLookbackInRound);
         pool.setPriceStatisticsLookbackInSec(params.priceStatisticsLookbackInSec);
 
         _setPool(poolAddress, bindTokens, finalize);

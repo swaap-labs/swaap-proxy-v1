@@ -24,11 +24,11 @@ const TVL = 1000;
 // pool parameters
 const params = [
     publicSwap = true,
+    swapFee = web3.utils.toWei('0.00025'),
     priceStatisticsLookbackInRound = '5',
     dynamicCoverageFeesZ = web3.utils.toWei('1.5'),
-    swapFee = web3.utils.toWei('0.00025'),
-    priceStatisticsLookbackInSec = '900',
     dynamicCoverageFeesHorizon = web3.utils.toWei('60'),
+    priceStatisticsLookbackInSec = '900'
 ];
 
 const isFinalized = true;
@@ -180,13 +180,15 @@ async function assertParameters(pool) {
     // Check parameters
     console.log("\nChecking deployed pool's parameters");
 
-    let coverageParams = await pool.getCoverageParameters.call()
-    assert.equal((await pool.getSwapFee.call()).toString(), params[3]); // swap fee
-    assert.equal(coverageParams.dynamicCoverageFeesZ.toString(), params[2]); // dynamicCoverageFeesZ
-    assert.equal(coverageParams.dynamicCoverageFeesHorizon.toString(), params[5]); // dynamicCoverageFeesHorizon
-    assert.equal(coverageParams.priceStatisticsLBInRound.toString(), params[1]); // priceStatisticsLookbackInRound
-    assert.equal(coverageParams.priceStatisticsLBInSec.toString(), params[4]); // priceStatisticsLookbackInSec
     assert.equal((await pool.isPublicSwap.call()), params[0]) // isPublic
+    assert.equal((await pool.getSwapFee.call()).toString(), params[1]); // swap fee
+
+    let coverageParams = await pool.getCoverageParameters.call()
+    assert.equal(coverageParams.priceStatisticsLBInRound.toString(), params[2]); // priceStatisticsLookbackInRound
+    assert.equal(coverageParams.dynamicCoverageFeesZ.toString(), params[3]); // dynamicCoverageFeesZ
+    assert.equal(coverageParams.dynamicCoverageFeesHorizon.toString(), params[4]); // dynamicCoverageFeesHorizon
+    assert.equal(coverageParams.priceStatisticsLBInSec.toString(), params[5]); // priceStatisticsLookbackInSec
+    
     assert.equal((await pool.isFinalized.call()), isFinalized); // isFinalized
 
     for (const [index, token] of tokens.entries()) {
