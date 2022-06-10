@@ -32,21 +32,21 @@ contract Proxy {
 
     struct Pool {
         address pool;
-        uint    tokenBalanceIn;
-        uint    tokenWeightIn;
-        uint    tokenBalanceOut;
-        uint    tokenWeightOut;
-        uint    swapFee;
-        uint    effectiveLiquidity;
+        uint256 tokenBalanceIn;
+        uint256 tokenWeightIn;
+        uint256 tokenBalanceOut;
+        uint256 tokenWeightOut;
+        uint256 swapFee;
+        uint256 effectiveLiquidity;
     }
 
     struct Swap {
         address pool;
         address tokenIn;
         address tokenOut;
-        uint    swapAmount; // tokenInAmount / tokenOutAmount
-        uint    limitAmount; // minAmountOut / maxAmountIn
-        uint    maxPrice;
+        uint256 swapAmount; // tokenInAmount / tokenOutAmount
+        uint256 limitAmount; // minAmountOut / maxAmountIn
+        uint256 maxPrice;
     }
 
     struct Params {
@@ -70,7 +70,7 @@ contract Proxy {
         uint256 spread;
     }
 
-    modifier _beforeDeadline(uint deadline) {
+    modifier _beforeDeadline(uint256 deadline) {
         _require(block.timestamp <= deadline, ProxyErr.PASSED_DEADLINE);
         _;
     }
@@ -106,18 +106,18 @@ contract Proxy {
         Swap[] memory swaps,
         address tokenIn,
         address tokenOut,
-        uint totalAmountIn,
-        uint minTotalAmountOut,
-        uint deadline
+        uint256 totalAmountIn,
+        uint256 minTotalAmountOut,
+        uint256 deadline
     )
         external payable
         _beforeDeadline(deadline)
         _lock
-        returns (uint totalAmountOut)
+        returns (uint256 totalAmountOut)
     {
         transferFromAll(tokenIn, totalAmountIn);
 
-        for (uint i; i < swaps.length;) {
+        for (uint256 i; i < swaps.length;) {
             Swap memory swap = swaps[i];
 
             IERC20 swapTokenIn = IERC20(swap.tokenIn);
@@ -133,7 +133,7 @@ contract Proxy {
             // https://github.com/d-xo/weird-erc20
             swapTokenIn.approve(swap.pool, swap.swapAmount);
 
-            (uint tokenAmountOut,) = pool.swapExactAmountInMMM(
+            (uint256 tokenAmountOut,) = pool.swapExactAmountInMMM(
                 swap.tokenIn,
                 swap.swapAmount,
                 swap.tokenOut,
@@ -166,17 +166,17 @@ contract Proxy {
         Swap[] memory swaps,
         address tokenIn,
         address tokenOut,
-        uint maxTotalAmountIn,
-        uint deadline
+        uint256 maxTotalAmountIn,
+        uint256 deadline
     )
         external payable
         _beforeDeadline(deadline)
         _lock
-        returns (uint totalAmountIn)
+        returns (uint256 totalAmountIn)
     {
         transferFromAll(tokenIn, maxTotalAmountIn);
 
-        for (uint i; i < swaps.length;) {
+        for (uint256 i; i < swaps.length;) {
             Swap memory swap = swaps[i];
 
             IERC20 swapTokenIn = IERC20(swap.tokenIn);
@@ -192,7 +192,7 @@ contract Proxy {
             // https://github.com/d-xo/weird-erc20
             swapTokenIn.approve(swap.pool, swap.limitAmount);
 
-            (uint tokenAmountIn,) = pool.swapExactAmountOutMMM(
+            (uint256 tokenAmountIn,) = pool.swapExactAmountOutMMM(
                 swap.tokenIn,
                 swap.limitAmount,
                 swap.tokenOut,
@@ -234,21 +234,21 @@ contract Proxy {
         Swap[][] memory swapSequences,
         address tokenIn,
         address tokenOut,
-        uint totalAmountIn,
-        uint minTotalAmountOut,
-        uint deadline
+        uint256 totalAmountIn,
+        uint256 minTotalAmountOut,
+        uint256 deadline
     )
         public payable
         _beforeDeadline(deadline)
         _lock
-        returns (uint totalAmountOut)
+        returns (uint256 totalAmountOut)
     {
 
         transferFromAll(tokenIn, totalAmountIn);
 
-        for (uint i; i < swapSequences.length;) {
-            uint tokenAmountOut;
-            for (uint j; j < swapSequences[i].length;) {
+        for (uint256 i; i < swapSequences.length;) {
+            uint256 tokenAmountOut;
+            for (uint256 j; j < swapSequences[i].length;) {
                 Swap memory swap = swapSequences[i][j];
 
                 IERC20WithDecimals swapTokenIn = IERC20WithDecimals(swap.tokenIn);
@@ -307,18 +307,18 @@ contract Proxy {
         Swap[][] memory swapSequences,
         address tokenIn,
         address tokenOut,
-        uint maxTotalAmountIn,
-        uint deadline
+        uint256 maxTotalAmountIn,
+        uint256 deadline
     )
         public payable
         _beforeDeadline(deadline)
         _lock
-        returns (uint totalAmountIn)
+        returns (uint256 totalAmountIn)
     {
         transferFromAll(tokenIn, maxTotalAmountIn);
 
-        for (uint i; i < swapSequences.length;) {
-            uint tokenAmountInFirstSwap;
+        for (uint256 i; i < swapSequences.length;) {
+            uint256 tokenAmountInFirstSwap;
             // Specific code for a simple swap and a multihop (2 swaps in sequence)
 
             if (swapSequences[i].length == 1) {
@@ -355,7 +355,7 @@ contract Proxy {
                     secondSwap.maxPrice
                 );
                 // This would be token B as described above
-                uint intermediateTokenAmount = secondSwapResult.amount;
+                uint256 intermediateTokenAmount = secondSwapResult.amount;
                 (Struct.SwapResult memory firstSwapResult, ) = poolFirstSwap.getAmountInGivenOutMMM(
                     firstSwap.tokenIn,
                     firstSwap.limitAmount,
@@ -366,7 +366,7 @@ contract Proxy {
                 tokenAmountInFirstSwap = firstSwapResult.amount;
                 _require(tokenAmountInFirstSwap <= firstSwap.limitAmount, ProxyErr.LIMIT_IN);
 
-                //// Buy intermediateTokenAmount of token B with A in the first pool
+                // Buy intermediateTokenAmount of token B with A in the first pool
                 IERC20WithDecimals firstSwapTokenIn = IERC20WithDecimals(firstSwap.tokenIn);
                 if (firstSwapTokenIn.allowance(address(this), firstSwap.pool) > 0) {
                     firstSwapTokenIn.approve(firstSwap.pool, 0);
@@ -380,7 +380,7 @@ contract Proxy {
                     firstSwap.maxPrice
                 );
 
-                //// Buy the final amount of token C desired
+                // Buy the final amount of token C desired
                 IERC20WithDecimals secondSwapTokenIn = IERC20WithDecimals(secondSwap.tokenIn);
                 if (secondSwapTokenIn.allowance(address(this), secondSwap.pool) > 0) {
                     secondSwapTokenIn.approve(secondSwap.pool, 0);
@@ -420,26 +420,26 @@ contract Proxy {
         Params calldata params,
         IFactory factory,
         bool finalize,
-        uint deadline
+        uint256 deadline
     ) 
         external payable
         _beforeDeadline(deadline)
         _lock
         returns (address poolAddress)
     {
-        uint bindTokensNumber = bindTokens.length;
+        uint256 bindTokensNumber = bindTokens.length;
         uint256[] memory oraclePrices = new uint256[](bindTokensNumber);
         int256 price;
-        for(uint i; i < bindTokensNumber;) {
+        for(uint256 i; i < bindTokensNumber;) {
             (,price,,,) = AggregatorV3Interface(bindTokens[i].oracle).latestRoundData();
             _require(price > 0, ProxyErr.NEGATIVE_PRICE);
             oraclePrices[i] = uint(price);
             unchecked {++i;}
         }
 
-        uint balanceI;
+        uint256 balanceI;
         uint8 decimals0 = AggregatorV3Interface(bindTokens[0].oracle).decimals() + IERC20WithDecimals(bindTokens[0].token).decimals();
-        for(uint i=1; i < bindTokensNumber;){
+        for(uint256 i=1; i < bindTokensNumber;){
             //    balanceI = (oraclePrice_j / oraclePrice_i) * (balance_j * weight_i) / (weight_j)
             // => balanceI = (relativePrice_j_i * balance_j * weight_i) / (weight_j)
             balanceI = getTokenRelativePrice(
@@ -449,9 +449,9 @@ contract Proxy {
                 decimals0
             );
             
-            balanceI = bmul(balanceI, bindTokens[0].balance);
-            balanceI = bmul(balanceI, bindTokens[i].weight);
-            balanceI = bdiv(balanceI, bindTokens[0].weight);
+            balanceI = mul(balanceI, bindTokens[0].balance);
+            balanceI = mul(balanceI, bindTokens[i].weight);
+            balanceI = div(balanceI, bindTokens[0].weight);
             _require(balanceI <= bindTokens[i].balance, ProxyErr.LIMIT_IN);
             bindTokens[i].balance = balanceI;
             unchecked {++i;}
@@ -480,7 +480,7 @@ contract Proxy {
         Params calldata params,
         IFactory factory,
         bool finalize,
-        uint deadline
+        uint256 deadline
     )
     external
     _beforeDeadline(deadline)
@@ -530,7 +530,7 @@ contract Proxy {
 	    BindToken[] calldata bindTokens,
         IFactory factory,
         bool finalize,
-        uint deadline
+        uint256 deadline
     ) 
         external payable
         _beforeDeadline(deadline)
@@ -551,7 +551,7 @@ contract Proxy {
     {
         address tokenIn;
 
-        for (uint i; i < bindTokens.length;) {
+        for (uint256 i; i < bindTokens.length;) {
             BindToken memory bindToken = bindTokens[i];
 
             transferFromAll(bindToken.token, bindToken.balance);
@@ -612,7 +612,7 @@ contract Proxy {
 
         address[] memory tokensIn = IPool(pool).getTokens();
 
-        for(uint i; i < tokensIn.length;) {
+        for(uint256 i; i < tokensIn.length;) {
 
             if(tokensIn[i] == wnative && msg.value > 0) {
                 _require(msg.value == maxAmountsIn[i], ProxyErr.BAD_LIMIT_IN);
@@ -631,7 +631,7 @@ contract Proxy {
 
         IPool(pool).joinPool(poolAmountOut, maxAmountsIn);
 
-        for(uint i; i < tokensIn.length;) {
+        for(uint256 i; i < tokensIn.length;) {
 
             if(tokensIn[i] == wnative && msg.value > 0) {
                 transferAll(NATIVE_ADDRESS, IERC20(tokensIn[i]).balanceOf(address(this)));
@@ -659,8 +659,8 @@ contract Proxy {
     function joinswapExternAmountIn(
         address pool,
         address tokenIn,
-        uint tokenAmountIn,
-        uint minPoolAmountOut,
+        uint256 tokenAmountIn,
+        uint256 minPoolAmountOut,
         uint256 deadline
     ) external payable
     _beforeDeadline(deadline)
@@ -686,7 +686,7 @@ contract Proxy {
         return poolAmountOut;
     }
 
-    function transferFromAll(address token, uint amount) internal {
+    function transferFromAll(address token, uint256 amount) internal {
         if (isNative(token)) {
             // The 'amount' input is not used in the payable case in order to convert all the
             // native token to wrapped native token. This is useful in function transferAll where only 
@@ -705,7 +705,7 @@ contract Proxy {
         }
     }
 
-    function transferAll(address token, uint amount) internal {
+    function transferAll(address token, uint256 amount) internal {
         if (amount != 0) {
             if (isNative(token)) {
                 IWrappedERC20(wnative).withdraw(amount);
@@ -722,7 +722,7 @@ contract Proxy {
 
     receive() external payable{}
 
-    function bmul(uint256 a, uint256 b)
+    function mul(uint256 a, uint256 b)
         internal pure
         returns (uint256)
     {
@@ -732,7 +732,7 @@ contract Proxy {
         return c2;
     }
 
-    function bdiv(uint256 a, uint256 b)
+    function div(uint256 a, uint256 b)
         internal pure
         returns (uint256)
     {
@@ -750,16 +750,16 @@ contract Proxy {
     pure
     returns (uint256) {
         // we consider tokens price to be > 0
-        uint256 rawDiv = bdiv(price2, price1);
+        uint256 rawDiv = div(price2, price1);
         if (decimal1 == decimal2) {
             return rawDiv;
         } else if (decimal1 > decimal2) {
-            return bmul(
+            return mul(
                 rawDiv,
                 10**(decimal1 - decimal2)*ONE
             );
         } else {
-            return bdiv(
+            return div(
                 rawDiv,
                 10**(decimal2 - decimal1)*ONE
             );

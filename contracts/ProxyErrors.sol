@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-pragma solidity 0.8.12;
+pragma solidity =0.8.12;
 
 /**
  * @author Forked from contracts developed by Balancer Labs and adapted by Swaap Labs
@@ -28,7 +28,7 @@ library ProxyErr {
 }
 
 /**
-* @dev Reverts if `condition` is false, with a revert reason containing `errorCode`. Only codes up to 999 are
+* @dev Reverts if `condition` is false, with a revert reason containing `errorCode`. Only codes up to 99 are
 * supported.
 */
 function _require(bool condition, uint256 errorCode) pure {
@@ -37,7 +37,7 @@ function _require(bool condition, uint256 errorCode) pure {
 
 
 /**
- * @dev Reverts with a revert reason containing `errorCode`. Only codes up to 999 are supported.
+ * @dev Reverts with a revert reason containing `errorCode`. Only codes up to 99 are supported.
  */
 function _revert(uint256 errorCode) pure {
     // We're going to dynamically create a revert uint256 based on the error code, with the following format:
