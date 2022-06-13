@@ -23,10 +23,10 @@
   },
   "repository": "git@github.com:swaap-labs/swaap-proxy-v1.git",
   "scripts": {
-    "compile": "truffle compile",
-    "testrpc": "ganache-cli --deterministic --gasLimit 10000000",
-    "test": "truffle test test/*.js",
-    "test:verbose": "VERBOSE=true truffle test test/*.js",
+    "build": "truffle compile",
+    "testrpc": "ganache --fork.url https://matic-mainnet.chainstacklabs.com --chain.allowUnlimitedContractSize -l 0x4C4B400",
+    "test": "truffle test --network dev",
+    "test:verbose": "VERBOSE=true truffle test --network dev",
     "coverage": "yarn solidity-coverage",
     "lint:contracts": "solhint contracts/**/*.sol",
     "deploy:polygon": "truffle migrate --network polygon",
@@ -34,7 +34,7 @@
   },
   "dependencies": {
     "@chainlink/contracts": "^0.1.9",
-    "@swaap-labs/swaap-core-v1": "^0.0.6",
+    "@swaap-labs/swaap-core-v1": "^1.0.0",
     "@openzeppelin/contracts": "^4.5.0",
     "@truffle/hdwallet-provider": "1.7.0",
     "decimal.js": "^10.2.0",
