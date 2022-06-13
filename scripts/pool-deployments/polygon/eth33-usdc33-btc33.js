@@ -26,9 +26,9 @@ const params = [
     publicSwap = true,
     swapFee = web3.utils.toWei('0.00025'),
     priceStatisticsLookbackInRound = '5',
-    dynamicCoverageFeesZ = web3.utils.toWei('1.5'),
-    dynamicCoverageFeesHorizon = web3.utils.toWei('60'),
-    priceStatisticsLookbackInSec = '900'
+    dynamicCoverageFeesZ = web3.utils.toWei('6'),
+    dynamicCoverageFeesHorizon = web3.utils.toWei('5'),
+    priceStatisticsLookbackInSec = '3600'
 ];
 
 const isFinalized = true;
