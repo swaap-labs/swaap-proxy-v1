@@ -214,7 +214,7 @@ contract Proxy is IProxy {
             for (uint256 j; j < swapSequences[i].length;) {
                 ProxyStruct.Swap memory swap = swapSequences[i][j];
 
-                IERC20WithDecimals swapTokenIn = IERC20WithDecimals(swap.tokenIn);
+                IERC20 swapTokenIn = IERC20(swap.tokenIn);
                 if (j >= 1) {
                     // Makes sure that on the second swap the output of the first was used
                     // so there is not intermediate token leftover
@@ -286,7 +286,7 @@ contract Proxy is IProxy {
 
             if (swapSequences[i].length == 1) {
                 ProxyStruct.Swap memory swap = swapSequences[i][0];
-                IERC20WithDecimals swapTokenIn = IERC20WithDecimals(swap.tokenIn);
+                IERC20 swapTokenIn = IERC20(swap.tokenIn);
 
                 IPool pool = IPool(swap.pool);
                 if (swapTokenIn.allowance(address(this), swap.pool) > 0) {
@@ -330,7 +330,7 @@ contract Proxy is IProxy {
                 _require(tokenAmountInFirstSwap <= firstSwap.limitAmount, ProxyErr.LIMIT_IN);
 
                 // Buy intermediateTokenAmount of token B with A in the first pool
-                IERC20WithDecimals firstSwapTokenIn = IERC20WithDecimals(firstSwap.tokenIn);
+                IERC20 firstSwapTokenIn = IERC20(firstSwap.tokenIn);
                 if (firstSwapTokenIn.allowance(address(this), firstSwap.pool) > 0) {
                     firstSwapTokenIn.approve(firstSwap.pool, 0);
                 }
@@ -344,7 +344,7 @@ contract Proxy is IProxy {
                 );
 
                 // Buy the final amount of token C desired
-                IERC20WithDecimals secondSwapTokenIn = IERC20WithDecimals(secondSwap.tokenIn);
+                IERC20 secondSwapTokenIn = IERC20(secondSwap.tokenIn);
                 if (secondSwapTokenIn.allowance(address(this), secondSwap.pool) > 0) {
                     secondSwapTokenIn.approve(secondSwap.pool, 0);
                 }
@@ -539,7 +539,7 @@ contract Proxy is IProxy {
         if (finalize) {
             // This will finalize the pool and send the pool shares to the caller
             IPool(pool).finalize();
-            IERC20WithDecimals(pool).transfer(msg.sender, IERC20WithDecimals(pool).balanceOf(address(this)));
+            IERC20(pool).transfer(msg.sender, IERC20(pool).balanceOf(address(this)));
         }
 
         /*
@@ -604,7 +604,7 @@ contract Proxy is IProxy {
             unchecked{++i;}
         }
 
-        IERC20WithDecimals(pool).transfer(msg.sender, poolAmountOut);
+        IERC20(pool).transfer(msg.sender, poolAmountOut);
 
     }
 
@@ -644,7 +644,7 @@ contract Proxy is IProxy {
 
         poolAmountOut = IPool(pool).joinswapExternAmountInMMM(tokenIn, tokenAmountIn, minPoolAmountOut);
         
-        IERC20WithDecimals(pool).transfer(msg.sender, poolAmountOut);
+        IERC20(pool).transfer(msg.sender, poolAmountOut);
         
         return poolAmountOut;
     }
