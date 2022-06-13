@@ -604,7 +604,7 @@ contract Proxy is IProxy {
             unchecked{++i;}
         }
 
-        IERC20WithDecimals(pool).transfer(msg.sender, IERC20WithDecimals(pool).balanceOf(address(this)));
+        IERC20WithDecimals(pool).transfer(msg.sender, poolAmountOut);
 
     }
 
@@ -644,7 +644,7 @@ contract Proxy is IProxy {
 
         poolAmountOut = IPool(pool).joinswapExternAmountInMMM(tokenIn, tokenAmountIn, minPoolAmountOut);
         
-        IERC20WithDecimals(pool).transfer(msg.sender, IERC20WithDecimals(pool).balanceOf(address(this)));
+        IERC20WithDecimals(pool).transfer(msg.sender, poolAmountOut);
         
         return poolAmountOut;
     }
