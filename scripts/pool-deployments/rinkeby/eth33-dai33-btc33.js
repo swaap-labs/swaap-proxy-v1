@@ -35,8 +35,8 @@ const isFinalized = true;
 
 const FACTORY_ADDRESS = process.env.FACTORY_ADDRESS_RINKEBY;
 const PROXY_ADDRESS = process.env.PROXY_ADDRESS_RINKEBY;
-const newController = process.env.NEW_CONTROLLER_RINKEBY;
-const gasPrice = process.env.GAS_PRICE_WEI;
+const NEW_CONTROLLER = process.env.NEW_CONTROLLER_RINKEBY;
+const GAS_PRICE = process.env.GAS_PRICE_WEI_RINKEBY;
 
 LOG_NEW_POOL_SIGN = "0x8ccec77b0cb63ac2cafd0f5de8cdfadab91ce656d262240ba8a6343bccc5f945"
 
@@ -64,7 +64,7 @@ async function main(){
         FACTORY_ADDRESS,
         isFinalized,
         maxDeadline,
-        {from: sender, gasPrice: gasPrice}
+        {from: sender, gasPrice: GAS_PRICE}
     );
     let poolAddress;
     for (let i = 0; i < tx.receipt.rawLogs.length; i++) {
@@ -82,9 +82,9 @@ async function main(){
     const pool = await Pool.at(poolAddress);
 
     // Set transfer ownership
-    if(newController !== undefined && newController.length == 42) {
-        pool.transferOwnership(newController, {from: sender});
-        console.log(`Controller ownership request sent to ${newController}`);
+    if(NEW_CONTROLLER !== undefined && NEW_CONTROLLER.length == 42) {
+        pool.transferOwnership(NEW_CONTROLLER, {from: sender});
+        console.log(`Controller ownership request sent to ${NEW_CONTROLLER}`);
     }
 
     await assertParameters(pool);
@@ -152,7 +152,7 @@ async function setApprovals(sender, PROXY_ADDRESS, maxBalances) {
         await tokenContract.approve(
             PROXY_ADDRESS,
             balanceInDecimals,
-            {from: sender, gasPrice: gasPrice}
+            {from: sender, gasPrice: GAS_PRICE}
         );
     }
 
