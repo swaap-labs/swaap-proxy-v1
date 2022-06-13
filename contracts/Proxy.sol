@@ -15,6 +15,8 @@ pragma solidity =0.8.12;
 
 import "./ProxyErrors.sol";
 
+import "./structs/ProxyStruct.sol";
+
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
@@ -23,52 +25,13 @@ import "@swaap-labs/swaap-core-v1/contracts/interfaces/IFactory.sol";
 import "@swaap-labs/swaap-core-v1/contracts/interfaces/IPool.sol";
 import "@swaap-labs/swaap-core-v1/contracts/structs/Struct.sol";
 
+import "./interfaces/IProxy.sol";
 import "./interfaces/IERC20WithDecimals.sol";
 import "./interfaces/IWrappedERC20.sol";
 
-contract Proxy {
+contract Proxy is IProxy {
 
     using SafeERC20 for IERC20;
-
-    struct Pool {
-        address pool;
-        uint256 tokenBalanceIn;
-        uint256 tokenWeightIn;
-        uint256 tokenBalanceOut;
-        uint256 tokenWeightOut;
-        uint256 swapFee;
-        uint256 effectiveLiquidity;
-    }
-
-    struct Swap {
-        address pool;
-        address tokenIn;
-        address tokenOut;
-        uint256 swapAmount; // tokenInAmount / tokenOutAmount
-        uint256 limitAmount; // minAmountOut / maxAmountIn
-        uint256 maxPrice;
-    }
-
-    struct Params {
-        bool    publicSwap;
-        uint256 swapFee;
-        uint8   priceStatisticsLookbackInRound;
-        uint64  dynamicCoverageFeesZ;
-        uint256 dynamicCoverageFeesHorizon;
-        uint256 priceStatisticsLookbackInSec;
-    }
-
-    struct BindToken {
-        address token;
-        uint256 balance;
-        uint80  weight;
-        address oracle;
-    }
-    
-    struct SwapResult {
-        uint256 amount;
-        uint256 spread;
-    }
 
     modifier _beforeDeadline(uint256 deadline) {
         _require(block.timestamp <= deadline, ProxyErr.PASSED_DEADLINE);
@@ -103,22 +66,22 @@ contract Proxy {
     * @return totalAmountOut Total amount of tokenOut received
     */
     function batchSwapExactIn(
-        Swap[] memory swaps,
+        ProxyStruct.Swap[] memory swaps,
         address tokenIn,
         address tokenOut,
         uint256 totalAmountIn,
         uint256 minTotalAmountOut,
         uint256 deadline
     )
-        external payable
-        _beforeDeadline(deadline)
-        _lock
-        returns (uint256 totalAmountOut)
+    external payable
+    _beforeDeadline(deadline)
+    _lock
+    returns (uint256 totalAmountOut)
     {
         transferFromAll(tokenIn, totalAmountIn);
 
         for (uint256 i; i < swaps.length;) {
-            Swap memory swap = swaps[i];
+            ProxyStruct.Swap memory swap = swaps[i];
 
             IERC20 swapTokenIn = IERC20(swap.tokenIn);
             IPool pool = IPool(swap.pool);
@@ -163,21 +126,21 @@ contract Proxy {
     * @return totalAmountIn Total amount of traded tokenIn
     */
     function batchSwapExactOut(
-        Swap[] memory swaps,
+        ProxyStruct.Swap[] memory swaps,
         address tokenIn,
         address tokenOut,
         uint256 maxTotalAmountIn,
         uint256 deadline
     )
-        external payable
-        _beforeDeadline(deadline)
-        _lock
-        returns (uint256 totalAmountIn)
+    external payable
+    _beforeDeadline(deadline)
+    _lock
+    returns (uint256 totalAmountIn)
     {
         transferFromAll(tokenIn, maxTotalAmountIn);
 
         for (uint256 i; i < swaps.length;) {
-            Swap memory swap = swaps[i];
+            ProxyStruct.Swap memory swap = swaps[i];
 
             IERC20 swapTokenIn = IERC20(swap.tokenIn);
             IPool pool = IPool(swap.pool);
@@ -231,17 +194,17 @@ contract Proxy {
     * @return totalAmountOut Total amount of tokenOut received
     */
     function multihopBatchSwapExactIn(
-        Swap[][] memory swapSequences,
+        ProxyStruct.Swap[][] memory swapSequences,
         address tokenIn,
         address tokenOut,
         uint256 totalAmountIn,
         uint256 minTotalAmountOut,
         uint256 deadline
     )
-        public payable
-        _beforeDeadline(deadline)
-        _lock
-        returns (uint256 totalAmountOut)
+    external payable
+    _beforeDeadline(deadline)
+    _lock
+    returns (uint256 totalAmountOut)
     {
 
         transferFromAll(tokenIn, totalAmountIn);
@@ -249,7 +212,7 @@ contract Proxy {
         for (uint256 i; i < swapSequences.length;) {
             uint256 tokenAmountOut;
             for (uint256 j; j < swapSequences[i].length;) {
-                Swap memory swap = swapSequences[i][j];
+                ProxyStruct.Swap memory swap = swapSequences[i][j];
 
                 IERC20WithDecimals swapTokenIn = IERC20WithDecimals(swap.tokenIn);
                 if (j >= 1) {
@@ -304,16 +267,16 @@ contract Proxy {
     * @return totalAmountIn Total amount of traded tokenIn
     */
     function multihopBatchSwapExactOut(
-        Swap[][] memory swapSequences,
+        ProxyStruct.Swap[][] memory swapSequences,
         address tokenIn,
         address tokenOut,
         uint256 maxTotalAmountIn,
         uint256 deadline
     )
-        public payable
-        _beforeDeadline(deadline)
-        _lock
-        returns (uint256 totalAmountIn)
+    external payable
+    _beforeDeadline(deadline)
+    _lock
+    returns (uint256 totalAmountIn)
     {
         transferFromAll(tokenIn, maxTotalAmountIn);
 
@@ -322,7 +285,7 @@ contract Proxy {
             // Specific code for a simple swap and a multihop (2 swaps in sequence)
 
             if (swapSequences[i].length == 1) {
-                Swap memory swap = swapSequences[i][0];
+                ProxyStruct.Swap memory swap = swapSequences[i][0];
                 IERC20WithDecimals swapTokenIn = IERC20WithDecimals(swap.tokenIn);
 
                 IPool pool = IPool(swap.pool);
@@ -342,8 +305,8 @@ contract Proxy {
                 // Consider we are swapping A -> B and B -> C. The goal is to buy a given amount
                 // of token C. But first we need to buy B with A so we can then buy C with B
                 // To get the exact amount of C we then first need to calculate how much B we'll need:
-                Swap memory firstSwap = swapSequences[i][0];
-                Swap memory secondSwap = swapSequences[i][1];
+                ProxyStruct.Swap memory firstSwap = swapSequences[i][0];
+                ProxyStruct.Swap memory secondSwap = swapSequences[i][1];
 
                 IPool poolSecondSwap = IPool(secondSwap.pool);
                 IPool poolFirstSwap = IPool(firstSwap.pool);
@@ -416,16 +379,16 @@ contract Proxy {
     * @return poolAddress The created pool's address
     */
     function createBalancedPoolWithParams(
-	    BindToken[] memory bindTokens,
-        Params calldata params,
+	    ProxyStruct.BindToken[] memory bindTokens,
+        ProxyStruct.Params calldata params,
         IFactory factory,
         bool finalize,
         uint256 deadline
     ) 
-        external payable
-        _beforeDeadline(deadline)
-        _lock
-        returns (address poolAddress)
+    external payable
+    _beforeDeadline(deadline)
+    _lock
+    returns (address poolAddress)
     {
         uint256 bindTokensNumber = bindTokens.length;
         uint256[] memory oraclePrices = new uint256[](bindTokensNumber);
@@ -476,16 +439,15 @@ contract Proxy {
     * @return poolAddress The created pool's address
     */
     function createPoolWithParams(
-	    BindToken[] calldata bindTokens,
-        Params calldata params,
+	    ProxyStruct.BindToken[] calldata bindTokens,
+        ProxyStruct.Params calldata params,
         IFactory factory,
         bool finalize,
         uint256 deadline
     )
-    external
+    external payable
     _beforeDeadline(deadline)
     _lock
-    payable
     returns (address poolAddress)
     {
         poolAddress = _createPoolWithParams(
@@ -497,8 +459,8 @@ contract Proxy {
     }
 
     function _createPoolWithParams(
-	    BindToken[] memory bindTokens,
-        Params calldata params,
+	    ProxyStruct.BindToken[] memory bindTokens,
+        ProxyStruct.Params calldata params,
         IFactory factory,
         bool finalize
     ) 
@@ -527,15 +489,15 @@ contract Proxy {
     * @return poolAddress The created pool's address
     */
     function createPool(
-	    BindToken[] calldata bindTokens,
+	    ProxyStruct.BindToken[] calldata bindTokens,
         IFactory factory,
         bool finalize,
         uint256 deadline
     ) 
-        external payable
-        _beforeDeadline(deadline)
-        _lock
-        returns (address poolAddress)
+    external payable
+    _beforeDeadline(deadline)
+    _lock
+    returns (address poolAddress)
     {
         poolAddress = factory.newPool();
 
@@ -544,7 +506,7 @@ contract Proxy {
 
     function _setPool(
         address pool,
-	    BindToken[] memory bindTokens,
+	    ProxyStruct.BindToken[] memory bindTokens,
         bool finalize
     )
         internal
@@ -552,7 +514,7 @@ contract Proxy {
         address tokenIn;
 
         for (uint256 i; i < bindTokens.length;) {
-            BindToken memory bindToken = bindTokens[i];
+            ProxyStruct.BindToken memory bindToken = bindTokens[i];
 
             transferFromAll(bindToken.token, bindToken.balance);
             
@@ -662,7 +624,8 @@ contract Proxy {
         uint256 tokenAmountIn,
         uint256 minPoolAmountOut,
         uint256 deadline
-    ) external payable
+    )
+    external payable
     _beforeDeadline(deadline)
     _lock
     returns (uint256 poolAmountOut)
