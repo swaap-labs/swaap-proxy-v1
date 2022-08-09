@@ -13,6 +13,10 @@ contract('Proxy - BatchSwap', async (accounts) => {
     
     // wnative is considered to be WETH, even if the tests are forking polygon
     let wnative = '0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270'; // wmatic on polygon
+
+    // Aggregators addresses
+    const zeroEx   = "0xdef1c0ded9bec7f1a1670819833240f027b25eff";
+
     const NATIVE_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
     let wnative_contract;
 
@@ -86,7 +90,7 @@ contract('Proxy - BatchSwap', async (accounts) => {
 
     before(async () => {        
         factory = await Factory.deployed();
-        proxy = await Proxy.new(wnative);
+        proxy = await Proxy.new(wnative, zeroEx);
         
         wnative_contract = await IWrappedERC20.at(wnative);
 
