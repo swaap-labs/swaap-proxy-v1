@@ -24,6 +24,7 @@ library ProxyErr {
     uint256 internal constant LIMIT_OUT       = 3;
     uint256 internal constant BAD_LIMIT_IN    = 4;
     uint256 internal constant NEGATIVE_PRICE  = 5;
+    uint256 internal constant FAILED_CALL     = 6;
 
 }
 

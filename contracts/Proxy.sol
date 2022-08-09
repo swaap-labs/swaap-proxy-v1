@@ -16,6 +16,7 @@ pragma solidity =0.8.12;
 import "./ProxyErrors.sol";
 
 import "./structs/ProxyStruct.sol";
+import "./structs/ZeroExStruct.sol";
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -49,9 +50,11 @@ contract Proxy is IProxy {
     address immutable private wnative;
     address constant private NATIVE_ADDRESS = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
     uint256 constant private ONE = 10 ** 18;
+    address immutable private zeroEx;
 
-    constructor(address _wnative) {
+    constructor(address _wnative, address _zeroEx) {
         wnative = _wnative;
+        zeroEx = _zeroEx;
     }
 
     /**
@@ -553,6 +556,113 @@ contract Proxy is IProxy {
     }
 
     /**
+    * @notice Joins the pool after externally trading an input token with the necessary tokens for the pool
+    * @dev bindedTokens and maxAmountsIn should respect the order of the output of pool.getTokens()
+    * @dev even when you join the pool using the native token, the wrapped address should be specified on 0x's API
+    * @param joiningAsset The address of the input token
+    * @param joiningAmount The amount of the input token
+    * @param pool The pool's address
+    * @param poolAmountOut The amount of pool shares expected to be received
+    * @param bindedTokens The addresses of the binded tokens to the pool
+    * @param maxAmountsIn The maximum amount of tokens that can be used to join the pool
+    * @param fillQuotes The trades needed before joining the pool (uses 0x's API)
+    * @param deadline Maximum deadline for accepting the joinswapExternAmountIn
+    * @return poolAmountOut The amount of pool shares received
+    */
+    function oneAssetJoin( // swap tokens externally and join pool
+        address[] calldata bindedTokens, // must be in the same order as the Pool
+        uint256[] memory maxAmountsIn,
+        ZeroExStruct.Quote[] calldata fillQuotes,
+        address joiningAsset,
+        uint256 joiningAmount,
+        address pool,
+        uint256 poolAmountOut,
+        uint256 deadline
+    )
+    external payable
+    _beforeDeadline(deadline)
+    _lock
+    returns (uint256)
+    {
+        transferFromAll(joiningAsset, joiningAmount);
+        
+        tradeAssetsZeroEx(fillQuotes, joiningAsset);
+
+        poolAmountOut = getMaximumPoolShares(bindedTokens, maxAmountsIn, pool, poolAmountOut);
+
+        IPool(pool).joinPool(poolAmountOut, maxAmountsIn);
+
+        for (uint256 i; i < bindedTokens.length;) {
+            transferAll(bindedTokens[i], getBalance(bindedTokens[i]));
+            unchecked {++i;}
+        }
+
+        transferAll(joiningAsset, getBalance(joiningAsset));
+
+        IERC20(pool).transfer(msg.sender, poolAmountOut);
+        
+        return poolAmountOut;
+    }
+
+    function tradeAssetsZeroEx(
+        ZeroExStruct.Quote[] calldata fillQuotes,
+        address joiningAsset
+    ) internal {
+
+        address tradedToken = isNative(joiningAsset)? wnative : joiningAsset;
+    
+        for(uint256 i; i < fillQuotes.length;) {           
+            // Give `spender` an limited allowance to spend this contract's `sellToken`.
+            // Note that for some tokens (e.g., USDT, KNC), you must first reset any existing
+            // allowance to 0 before being able to update it.
+            IERC20(tradedToken).approve(fillQuotes[i].spender, 0);
+            IERC20(tradedToken).approve(fillQuotes[i].spender, fillQuotes[i].sellAmount);
+
+            // Call the encoded swap function call on the contract at `swapTarget`
+            (bool success,) = zeroEx.call(fillQuotes[i].swapCallData);
+            _require(success, ProxyErr.FAILED_CALL);
+            
+            _require(getBalance(fillQuotes[i].buyToken) >= fillQuotes[i].buyAmount, ProxyErr.LIMIT_OUT);
+
+            unchecked{++i;}
+        }
+    }
+
+    function getMaximumPoolShares(
+        address[] calldata bindedTokens, // must be in the same order as the Pool
+        uint256[] memory maxAmountsIn,
+        address pool,
+        uint256 poolAmountOut
+    ) internal 
+    returns (uint256)
+    {
+
+        uint256 ratio = type(uint256).max;
+
+        for(uint256 i; i < bindedTokens.length;) {
+            uint256 tokenBalance = IERC20(bindedTokens[i]).balanceOf(address(this));
+            uint256 _ratio = divTruncated(tokenBalance, IPool(pool).getBalance(bindedTokens[i]));
+            if(_ratio < ratio) {
+                ratio  = _ratio;
+            }
+            unchecked {++i;}
+        }
+
+        uint256 extractablePoolShares = mulTruncated(ratio, IPool(pool).totalSupply());
+        uint256 sharesRatio = div(extractablePoolShares, poolAmountOut);
+
+        for(uint256 i; i < bindedTokens.length;) {
+            maxAmountsIn[i] = mul(maxAmountsIn[i], sharesRatio);
+            IERC20(bindedTokens[i]).safeApprove(pool, 0);
+            IERC20(bindedTokens[i]).safeApprove(pool, maxAmountsIn[i]);
+            unchecked {++i;}
+        }
+
+        return extractablePoolShares;
+
+    }
+
+    /**
     * @notice Join a pool with a fixed poolAmountOut
     * @dev Joining a pool could be done using the native token or its wrapped token, but not with both at the same time. 
     * In both cases, the wrapped token's address should be specified as an input (tokenIn).
@@ -660,7 +770,7 @@ contract Proxy is IProxy {
         }
     }
 
-    function getBalance(address token) internal view returns (uint) {
+    function getBalance(address token) internal view returns (uint256) {
         if (isNative(token)) {
             return IWrappedERC20(wnative).balanceOf(address(this));
         } else {
@@ -695,6 +805,14 @@ contract Proxy is IProxy {
         return c2;
     }
 
+    function mulTruncated(uint256 a, uint256 b)
+    internal pure
+    returns (uint256)
+    {
+        uint256 c0 = a * b;
+        return c0 / ONE;
+    }
+
     function div(uint256 a, uint256 b)
         internal pure
         returns (uint256)
@@ -703,6 +821,14 @@ contract Proxy is IProxy {
         uint256 c1 = c0 + (b / 2);
         uint256 c2 = c1 / b;
         return c2;
+    }
+
+    function divTruncated(uint256 a, uint256 b)
+    internal pure
+    returns (uint256)
+    {
+        uint256 c0 = a * ONE;
+        return c0 / b;
     }
 
     function getTokenRelativePrice(

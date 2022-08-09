@@ -2,3 +2,7 @@
 node_modules/
 build/
 contracts/artifacts
+typechain-types/
+artifacts/
+cache/
+yarn.lock
