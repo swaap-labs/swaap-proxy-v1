@@ -6,10 +6,8 @@ const { toWei } = web3.utils;
 const IERC20WithDecimals = artifacts.require('IERC20WithDecimals');
 const MAX = web3.utils.toTwosComplement(-1);
 
-async function createBalancedPool(tokenBalances, tokensAddresses, aggregatorsAddresses)
+async function createBalancedPool(tokenBalances, tokensAddresses, aggregatorsAddresses, factory)
 {
-    let factory = await Factory.deployed();
-
     let POOL = await factory.newPool.call();
     await factory.newPool();
     let pool = await Pool.at(POOL);

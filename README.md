@@ -19,7 +19,6 @@ For an in-depth documentation of Swaap, see our [docs](https://docs.swaap.financ
 ```bash
 $ yarn # install all dependencies
 $ yarn build # compile all contracts
-$ yarn testrpc # run ganache and fork polygon mainnet
 $ yarn test # run all tests (the tests are based on few polygon deployed SCs)
 ```
 
@@ -30,7 +29,7 @@ To deploy the Proxy contract to an EVM-compatible chain:
 $ yarn deploy:$NETWORK
 ```
 
-Where $NETWORK corresponds to a target network as defined in the [truffle-config.js](truffle-config.js) file.
+Where $NETWORK corresponds to a target network as defined in the [hardhat.config.ts](hardhat.config.ts) file.
 The deployment script won't deploy the factory except when running tests.
 
 ## Ecosystem
