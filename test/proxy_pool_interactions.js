@@ -1,5 +1,6 @@
 const truffleAssert = require('truffle-assertions');
 const Factory = artifacts.require('Factory');
+const Math = artifacts.require('Math');
 const Pool = artifacts.require('Pool');
 const Proxy = artifacts.require('Proxy');
 const TToken = artifacts.require('TToken');
@@ -89,7 +90,10 @@ contract('Proxy - BatchSwap', async (accounts) => {
     }
 
     before(async () => {        
-        factory = await Factory.deployed();
+        const math = await Math.new();
+        await Factory.link(math);
+        // console.log((await Factory.new()).address);
+        factory = await Factory.new();
         proxy = await Proxy.new(wnative, zeroEx);
         
         wnative_contract = await IWrappedERC20.at(wnative);
@@ -130,10 +134,10 @@ contract('Proxy - BatchSwap', async (accounts) => {
 
         let aggregatorAddresses = [ETHAggregatorAddress, DAIAggregatorAddress, BTCAggregatorAddress];
 
-        tpool1 = await createBalancedPool([15000, 45000000, 1000], [WETH, DAI, WBTC], aggregatorAddresses);
-        cpool1 = await createBalancedPool([15000, 45000000, 1000], [WETH, DAI, WBTC], aggregatorAddresses);
-        tpool2 = await createBalancedPool([7500, 22500000, 500], [WETH, DAI, WBTC], aggregatorAddresses);
-        cpool2 = await createBalancedPool([7500, 22500000, 500], [WETH, DAI, WBTC], aggregatorAddresses);
+        tpool1 = await createBalancedPool([15000, 45000000, 1000], [WETH, DAI, WBTC], aggregatorAddresses, factory);
+        cpool1 = await createBalancedPool([15000, 45000000, 1000], [WETH, DAI, WBTC], aggregatorAddresses, factory);
+        tpool2 = await createBalancedPool([7500, 22500000, 500], [WETH, DAI, WBTC], aggregatorAddresses, factory);
+        cpool2 = await createBalancedPool([7500, 22500000, 500], [WETH, DAI, WBTC], aggregatorAddresses, factory);
 
         console.log("Pools deployed");
 

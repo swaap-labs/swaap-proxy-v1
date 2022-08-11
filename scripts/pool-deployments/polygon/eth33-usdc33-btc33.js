@@ -44,6 +44,12 @@ LOG_NEW_POOL_SIGN = "0x8ccec77b0cb63ac2cafd0f5de8cdfadab91ce656d262240ba8a6343bc
 
 async function main(){
 
+    const detectedNetworkId = await web3.eth.net.getId();
+
+    if (detectedNetworkId !== networkId) {
+        throw 'Wrong network Id';
+    }
+
     const [sender, FACTORY_ADDRESS, PROXY_ADDRESS] = await getEnvVariables();
     
     const maxBalances = await getMaxBalancesGivenTVL();
@@ -206,13 +212,9 @@ async function assertParameters(pool) {
     }
 }
 
-module.exports = async function(callback) {
-
-    const detectedNetworkId = await web3.eth.net.getId();
-
-    if (detectedNetworkId !== networkId) {
-        throw 'Wrong network Id';
-    }
-
-    main().then(() => callback()).catch(err => callback(err));
-}
+// We recommend this pattern to be able to use async/await everywhere
+// and properly handle errors.
+main().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });

@@ -4,6 +4,7 @@ const wnative_addresses = {
     "kovan"  : "0xd0a1e359811322d97991e03f863a0c30c2cf029c",
     "polygon": "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270",
     "mumbai" : "0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889",
+    "unknown": "0x0000000000000000000000000000000000000000",
 };
   
 module.exports = { wnative_addresses };
