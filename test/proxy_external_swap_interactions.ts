@@ -13,8 +13,7 @@ describe("Proxy external swap", async () => {
 
     let owner: SignerWithAddress, otherAccount:SignerWithAddress;
 
-    const wmatic        = "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270"; // wrapped matic on polygon
-    const weth          = "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619"; // wrapped eth on polygon
+    const wmaticAddress = "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270"; // wrapped matic on polygon
     const nativeAddress = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
 
     // Aggregators addresses
@@ -33,7 +32,7 @@ describe("Proxy external swap", async () => {
     async function deployProxyAndGetWETH() {
         
         const PROXY = await ethers.getContractFactory("Proxy");
-        const proxy = await PROXY.deploy(wmatic, zeroEx, paraswap, oneInch);
+        const proxy = await PROXY.deploy(wmaticAddress, zeroEx, paraswap, oneInch);
 
         const tradeParams = {
             sellToken: 'MATIC',
@@ -61,16 +60,18 @@ describe("Proxy external swap", async () => {
 
         let weth = await ERC20.attach(quote.buyTokenAddress);
 
-        const wethBalance = await weth.balanceOf(owner.address); 
+        const initialWETHBalance = await weth.balanceOf(owner.address); 
 
-        expect(wethBalance).to.be.greaterThan(0);
+        expect(initialWETHBalance).to.be.greaterThan(0);
 
         const minTokenOut = 
             BigInt(parseUnits(quote.guaranteedPrice, 18).toString())*BigInt(quote.sellAmount)/libraryPrecision;
 
-        expect(wethBalance).to.be.greaterThanOrEqual(minTokenOut);
+        expect(initialWETHBalance).to.be.greaterThanOrEqual(minTokenOut);
 
-        return { proxy, wethBalance, weth };
+        const initialMATICBalance = await ethers.provider.getBalance(owner.address);
+
+        return { proxy, initialWETHBalance, weth, initialMATICBalance };
     }
 
     before(async() => {
@@ -79,7 +80,7 @@ describe("Proxy external swap", async () => {
         expect(proxy.address).not.to.equal(undefined);    
     });
 
-    async function checkBalances(tokenIn: string, tokenOut: string, minTokenOut: string | bigint, proxy: any) {
+    async function assertERC20Balances(tokenIn: string, tokenOut: string, minTokenOut: string | bigint, proxy: any) {
         const ERC20 = await ethers.getContractFactory("TToken");
 
         let erc20 = await ERC20.attach(tokenIn);
@@ -89,29 +90,39 @@ describe("Proxy external swap", async () => {
     
         // conditions on buy token balance
         erc20 = await ERC20.attach(tokenOut);
-        if(tokenOut.toLowerCase() != nativeAddress) {
-            expect(await erc20.balanceOf(proxy.address)).to.equal('0');
-            expect(await erc20.balanceOf(owner.address)).to.be.greaterThanOrEqual(minTokenOut);
-        } else {
-            // TODO: add conditions
-        }
+
+        expect(await erc20.balanceOf(proxy.address)).to.equal('0');
+        expect(await erc20.balanceOf(owner.address)).to.be.greaterThanOrEqual(minTokenOut);
+
+    }
+
+    async function assertBalances(tokenIn: string, initialMATICBalance: BigNumber, proxy: any) {
+        const ERC20 = await ethers.getContractFactory("TToken");
+
+        let erc20 = await ERC20.attach(tokenIn);
+        
+        expect(await erc20.balanceOf(proxy.address)).to.equal('0');
+        expect(await erc20.balanceOf(owner.address)).to.equal('0');
 
         expect(await ethers.provider.getBalance(proxy.address)).to.equal('0');
+        expect(await ethers.provider.getBalance(owner.address)).to.be.greaterThanOrEqual(initialMATICBalance);
+
     }
+
 
     describe("Using 0x's API", async () => {
     
-        it("External swap with an ERC20 token", async () => {
+        it("ERC20 to ERC20", async () => {
 
-            const { proxy, wethBalance, weth } = await loadFixture(deployProxyAndGetWETH);
+            const { proxy, initialWETHBalance, weth } = await loadFixture(deployProxyAndGetWETH);
 
             const tradeParams = {
                 sellToken: 'WETH',
                 buyToken: 'DAI',
-                sellAmount: wethBalance.toString()
+                sellAmount: initialWETHBalance.toString()
             };
             
-            await weth.approve(proxy.address, wethBalance);
+            await weth.approve(proxy.address, initialWETHBalance);
 
             let quote: any;
 
@@ -140,7 +151,50 @@ describe("Proxy external swap", async () => {
                 deadline
             );
 
-            await checkBalances(quote.sellTokenAddress, quote.buyTokenAddress, minTokenOut, proxy);
+            await assertERC20Balances(quote.sellTokenAddress, quote.buyTokenAddress, minTokenOut, proxy);
+
+        });
+
+        it("ERC20 to MATIC", async () => {
+
+            const { proxy, initialWETHBalance, weth, initialMATICBalance } = await loadFixture(deployProxyAndGetWETH);
+
+            const tradeParams = {
+                sellToken: 'WETH',
+                buyToken: 'MATIC',
+                sellAmount: initialWETHBalance.toString()
+            };
+            
+            await weth.approve(proxy.address, initialWETHBalance);
+
+            let quote: any;
+
+            await Promise.all([
+                    fetch(`https://polygon.api.0x.org/swap/v1/quote?${qs.stringify(tradeParams)}`),
+                ]).then(async(values) => {
+                    quote = await values[0].json();
+                });
+            
+            // Undefined code means the route was successfully calculated
+            expect(quote.code).to.equal(undefined);
+
+            const deadline = Math.floor(Date.now()/1000) + 30 * 60;
+
+            const minTokenOut = 
+                BigInt(parseUnits(quote.guaranteedPrice, 18).toString())*BigInt(quote.sellAmount)/libraryPrecision;
+
+            await proxy.externalSwap(
+                quote.sellTokenAddress,
+                quote.sellAmount,
+                quote.buyTokenAddress,
+                minTokenOut,
+                quote.allowanceTarget,
+                Aggregator.zeroEx,
+                quote.data,
+                deadline
+            );
+
+            await assertBalances(quote.sellTokenAddress, initialMATICBalance, proxy);
 
         });
 
@@ -148,17 +202,17 @@ describe("Proxy external swap", async () => {
 
     describe("Using Paraswap's API", async () => {
         
-        it("External swap with an ERC20 token", async () => {
+        it("ERC20 to ERC20", async () => {
 
-            const { proxy, wethBalance, weth } = await loadFixture(deployProxyAndGetWETH);
+            const { proxy, initialWETHBalance, weth } = await loadFixture(deployProxyAndGetWETH);
 
             const tradeParams = {
                 srcToken: 'ETH',
                 destToken: 'DAI',
-                amount: wethBalance.toString(),
+                amount: initialWETHBalance.toString(),
             };
 
-            await weth.approve(proxy.address, wethBalance);
+            await weth.approve(proxy.address, initialWETHBalance);
 
             const [ priceData, txData ] = await getParaswapTxData(tradeParams, proxy);
 
@@ -177,7 +231,40 @@ describe("Proxy external swap", async () => {
                 deadline
             );
 
-            await checkBalances(priceData.priceRoute.srcToken, priceData.priceRoute.destToken, minTokenOut, proxy);
+            await assertERC20Balances(priceData.priceRoute.srcToken, priceData.priceRoute.destToken, minTokenOut, proxy);
+
+        });
+
+        it("ERC20 to MATIC", async () => {
+
+            const { proxy, initialWETHBalance, weth, initialMATICBalance } = await loadFixture(deployProxyAndGetWETH);
+
+            const tradeParams = {
+                srcToken: 'ETH',
+                destToken: 'MATIC',
+                amount: initialWETHBalance.toString(),
+            };
+
+            await weth.approve(proxy.address, initialWETHBalance);
+
+            const [ priceData, txData ] = await getParaswapTxData(tradeParams, proxy);
+
+            const minTokenOut = BigInt(priceData.priceRoute.destAmount) * 98n / 100n; // 2% of slippage
+
+            const deadline = Math.floor(Date.now()/1000) + 30 * 60;
+
+            await proxy.externalSwap(
+                priceData.priceRoute.srcToken,
+                tradeParams.amount, // sell amount
+                priceData.priceRoute.destToken,
+                minTokenOut,
+                priceData.priceRoute.tokenTransferProxy, // spender
+                Aggregator.paraswap,
+                txData.data,
+                deadline
+            );
+
+            await assertBalances(priceData.priceRoute.srcToken, initialMATICBalance, proxy);
 
         });
 
@@ -185,20 +272,20 @@ describe("Proxy external swap", async () => {
 
     describe("Using 1inch's API", async () => {
 
-        it("External swap with an ERC20 token", async () => {
+        it("ERC20 to ERC20", async () => {
 
-            const { proxy, wethBalance, weth } = await loadFixture(deployProxyAndGetWETH);
+            const { proxy, initialWETHBalance, weth } = await loadFixture(deployProxyAndGetWETH);
 
             const tradeParams = {
                 fromTokenAddress: weth.address,
-                toTokenAddress: wmatic,
-                amount: wethBalance.toString(),
+                toTokenAddress: wmaticAddress,
+                amount: initialWETHBalance.toString(),
                 slippage: '2',
                 fromAddress: proxy.address,
                 disableEstimate: true
             };
             
-            await weth.approve(proxy.address, wethBalance);
+            await weth.approve(proxy.address, initialWETHBalance);
 
             let quote: any;
 
@@ -226,7 +313,52 @@ describe("Proxy external swap", async () => {
                 deadline,
             );
 
-            await checkBalances(quote.fromToken.address, quote.toToken.address, minTokenOut, proxy);
+            await assertERC20Balances(quote.fromToken.address, quote.toToken.address, minTokenOut, proxy);
+
+        });
+
+        it("ERC20 to MATIC", async () => {
+
+            const { proxy, initialWETHBalance, weth, initialMATICBalance } = await loadFixture(deployProxyAndGetWETH);
+
+            const tradeParams = {
+                fromTokenAddress: weth.address,
+                toTokenAddress: nativeAddress,
+                amount: initialWETHBalance.toString(),
+                slippage: '2',
+                fromAddress: proxy.address,
+                disableEstimate: true
+            };
+            
+            await weth.approve(proxy.address, initialWETHBalance);
+
+            let quote: any;
+
+            await Promise.all([
+                    fetch(`https://api.1inch.exchange/v4.0/137/swap?${qs.stringify(tradeParams)}`),
+                ]).then(async(values) => {
+                    quote = await values[0].json();
+                });
+
+            // Undefined code means the route was successfully calculated
+            expect(quote.code).to.equal(undefined);
+
+            const deadline = Math.floor(Date.now()/1000) + 30 * 60;
+
+            const minTokenOut = BigInt(quote.toTokenAmount) * 98n / 100n; // 2% slippage
+
+            await proxy.externalSwap(
+                quote.fromToken.address,
+                quote.fromTokenAmount,
+                quote.toToken.address,
+                minTokenOut,
+                quote.tx.to,
+                Aggregator.oneInch,
+                quote.tx.data,
+                deadline,
+            );
+
+            await assertBalances(quote.fromToken.address, initialMATICBalance, proxy);
 
         });
 
