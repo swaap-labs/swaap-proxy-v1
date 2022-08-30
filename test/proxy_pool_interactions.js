@@ -17,6 +17,8 @@ contract('Proxy - BatchSwap', async (accounts) => {
 
     // Aggregators addresses
     const zeroEx   = "0xdef1c0ded9bec7f1a1670819833240f027b25eff";
+    const paraswap = "0xDEF171Fe48CF0115B1d80b88dc8eAB59176FEe57";
+    const oneInch  = "0x1111111254fb6c44bac0bed2854e76f90643097d";
 
     const NATIVE_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
     let wnative_contract;
@@ -94,7 +96,7 @@ contract('Proxy - BatchSwap', async (accounts) => {
         await Factory.link(math);
         // console.log((await Factory.new()).address);
         factory = await Factory.new();
-        proxy = await Proxy.new(wnative, zeroEx);
+        proxy = await Proxy.new(wnative, zeroEx, paraswap, oneInch);
         
         wnative_contract = await IWrappedERC20.at(wnative);
 
