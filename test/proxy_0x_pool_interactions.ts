@@ -28,6 +28,8 @@ describe("Proxy joinPoolVia0x", async () => {
     
     // Aggregators addresses
     const zeroEx   = "0xdef1c0ded9bec7f1a1670819833240f027b25eff";
+    const paraswap = "0xDEF171Fe48CF0115B1d80b88dc8eAB59176FEe57";
+    const oneInch  = "0x1111111254fb6c44bac0bed2854e76f90643097d"; 
     
     // Contracts are deployed using the first signer/account by default
     const poolAddress = '0x7f5f7411c2c7ec60e2db946abbe7dc354254870b';
@@ -66,7 +68,7 @@ describe("Proxy joinPoolVia0x", async () => {
         
     
         const PROXY = await ethers.getContractFactory("Proxy");
-        const proxy = await PROXY.deploy(wmatic, zeroEx);
+        const proxy = await PROXY.deploy(wmatic, zeroEx, paraswap, oneInch);
         // await proxy.deployed();
 
         const POOL = await ethers.getContractFactory("Pool", {

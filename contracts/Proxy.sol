@@ -47,14 +47,24 @@ contract Proxy is IProxy {
         locked = false;
     }
 
+    enum Aggregator {
+        ZeroEx,
+        Paraswap,
+        OneInch
+    }
+
     address immutable private wnative;
     address constant private NATIVE_ADDRESS = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
     uint256 constant private ONE = 10 ** 18;
     address immutable private zeroEx;
+    address immutable private paraswap;
+    address immutable private oneInch;
 
-    constructor(address _wnative, address _zeroEx) {
+    constructor(address _wnative, address _zeroEx, address _paraswap, address _oneInch) {
         wnative = _wnative;
         zeroEx = _zeroEx;
+        paraswap = _paraswap;
+        oneInch = _oneInch;
     }
 
     /**
@@ -626,6 +636,66 @@ contract Proxy is IProxy {
 
             unchecked{++i;}
         }
+    }
+
+    /**
+    * @notice Performs a swap using 0x, paraswap or 1inch's sdk
+    * @param tokenIn The address of tokenIn
+    * @param amountIn The maximum amount of tokenIn
+    * @param tokenOut The address of tokenOut
+    * @param amountOut The minimum expected amount of tokenOut
+    * @param spender The SC's address that will spender the input token
+    * @param swapCallData The swap call data
+    */
+    function externalSwap(
+        IERC20 tokenIn,
+        uint256 amountIn,
+        IERC20 tokenOut,
+        uint256 amountOut,
+        address spender,
+        Aggregator aggregator,
+        bytes calldata swapCallData,
+        uint256 deadline
+    )
+    external
+    _beforeDeadline(deadline)
+    _lock
+    {
+        
+        tokenIn.safeTransferFrom(msg.sender, address(this), amountIn);
+
+        // Give `spender` an limited allowance to spend this contract's `sellToken`.
+        // Note that for some tokens (e.g., USDT, KNC), you must first reset any existing
+        // allowance to 0 before being able to update it.
+        tokenIn.approve(spender, 0);
+        tokenIn.approve(spender, amountIn);
+
+        // Call the encoded swap function call on the contract at `swapTarget`
+        bool success;
+        if (aggregator == Aggregator.ZeroEx) {
+            (success,) = zeroEx.call(swapCallData);
+        } else if (aggregator == Aggregator.Paraswap) {
+            (success,) = paraswap.call(swapCallData);
+        } else if (aggregator == Aggregator.OneInch) {
+            (success,) = oneInch.call(swapCallData);
+        } else {
+            _revert(ProxyErr.BAD_AGGREGATOR);
+        }
+
+        _require(success, ProxyErr.FAILED_CALL);
+        
+        if(address(tokenOut) != NATIVE_ADDRESS) {
+            uint256 receivedAmountOut = tokenOut.balanceOf(address(this));
+            _require(receivedAmountOut >= amountOut, ProxyErr.LIMIT_OUT);
+            tokenOut.safeTransfer(msg.sender, receivedAmountOut);
+        } else {
+            uint256 receivedAmountOut = address(this).balance;
+            _require(receivedAmountOut >= amountOut, ProxyErr.LIMIT_OUT);
+            payable(msg.sender).transfer(receivedAmountOut);
+        }
+
+        tokenIn.safeTransfer(msg.sender, tokenIn.balanceOf(address(this)));
+
     }
 
     function getMaximumPoolShares(
