@@ -99,15 +99,7 @@ contract Proxy is IProxy {
             IERC20 swapTokenIn = IERC20(swap.tokenIn);
             IPool pool = IPool(swap.pool);
 
-            // required for some ERC20 such as USDT before changing the allowed transferable tokens
-            // https://github.com/d-xo/weird-erc20
-            if (swapTokenIn.allowance(address(this), swap.pool) > 0) {
-                swapTokenIn.approve(swap.pool, 0);
-            }
-
-            // approving type(uint).max may result an error for some ERC20 tokens
-            // https://github.com/d-xo/weird-erc20
-            swapTokenIn.approve(swap.pool, swap.swapAmount);
+            getApproval(swapTokenIn, swap.pool, swap.swapAmount);
 
             (uint256 tokenAmountOut,) = pool.swapExactAmountInMMM(
                 swap.tokenIn,
@@ -158,15 +150,7 @@ contract Proxy is IProxy {
             IERC20 swapTokenIn = IERC20(swap.tokenIn);
             IPool pool = IPool(swap.pool);
 
-            // required for some ERC20 such as USDT before changing the allowed transferable tokens
-            // https://github.com/d-xo/weird-erc20
-            if (swapTokenIn.allowance(address(this), swap.pool) > 0) {
-                swapTokenIn.approve(swap.pool, 0);
-            }
-
-            // approving type(uint).max may result an error for some ERC20 tokens
-            // https://github.com/d-xo/weird-erc20
-            swapTokenIn.approve(swap.pool, swap.limitAmount);
+            getApproval(swapTokenIn, swap.pool, swap.limitAmount);
 
             (uint256 tokenAmountIn,) = pool.swapExactAmountOutMMM(
                 swap.tokenIn,
@@ -234,10 +218,9 @@ contract Proxy is IProxy {
                     swap.swapAmount = tokenAmountOut;
                 }
                 IPool pool = IPool(swap.pool);
-                if (swapTokenIn.allowance(address(this), swap.pool) > 0) {
-                    swapTokenIn.approve(swap.pool, 0);
-                }
-                swapTokenIn.approve(swap.pool, swap.swapAmount);
+
+                getApproval(swapTokenIn, swap.pool, swap.swapAmount);
+
                 (tokenAmountOut,) = pool.swapExactAmountInMMM(
                     swap.tokenIn,
                     swap.swapAmount,
@@ -302,10 +285,8 @@ contract Proxy is IProxy {
                 IERC20 swapTokenIn = IERC20(swap.tokenIn);
 
                 IPool pool = IPool(swap.pool);
-                if (swapTokenIn.allowance(address(this), swap.pool) > 0) {
-                    swapTokenIn.approve(swap.pool, 0);
-                }
-                swapTokenIn.approve(swap.pool, swap.limitAmount);
+
+                getApproval(swapTokenIn, swap.pool, swap.limitAmount);
 
                 (tokenAmountInFirstSwap,) = pool.swapExactAmountOutMMM(
                     swap.tokenIn,
@@ -344,10 +325,9 @@ contract Proxy is IProxy {
 
                 // Buy intermediateTokenAmount of token B with A in the first pool
                 IERC20 firstSwapTokenIn = IERC20(firstSwap.tokenIn);
-                if (firstSwapTokenIn.allowance(address(this), firstSwap.pool) > 0) {
-                    firstSwapTokenIn.approve(firstSwap.pool, 0);
-                }
-                firstSwapTokenIn.approve(firstSwap.pool, tokenAmountInFirstSwap);
+
+                getApproval(firstSwapTokenIn, firstSwap.pool, tokenAmountInFirstSwap);
+
                 poolFirstSwap.swapExactAmountOutMMM(
                     firstSwap.tokenIn,
                     tokenAmountInFirstSwap,
@@ -358,10 +338,8 @@ contract Proxy is IProxy {
 
                 // Buy the final amount of token C desired
                 IERC20 secondSwapTokenIn = IERC20(secondSwap.tokenIn);
-                if (secondSwapTokenIn.allowance(address(this), secondSwap.pool) > 0) {
-                    secondSwapTokenIn.approve(secondSwap.pool, 0);
-                }
-                    secondSwapTokenIn.approve(secondSwap.pool, intermediateTokenAmount);
+
+                getApproval(secondSwapTokenIn, secondSwap.pool, intermediateTokenAmount);
 
                 poolSecondSwap.swapExactAmountOutMMM(
                     secondSwap.tokenIn,
@@ -538,9 +516,7 @@ contract Proxy is IProxy {
                 tokenIn = bindToken.token;
             }
 
-            // approving type(uint).max may result an error for some ERC20 tokens
-            // https://github.com/d-xo/weird-erc20
-            IERC20(tokenIn).approve(pool, bindToken.balance);
+            getApproval(IERC20(tokenIn), pool, bindToken.balance);
             
             IPool(pool).bindMMM(tokenIn, bindToken.balance, bindToken.weight, bindToken.oracle);
             
@@ -567,20 +543,20 @@ contract Proxy is IProxy {
 
     /**
     * @notice Joins the pool after externally trading an input token with the necessary tokens for the pool
-    * @dev bindedTokens and maxAmountsIn should respect the order of the output of pool.getTokens()
-    * @dev even when you join the pool using the native token, the wrapped address should be specified on 0x's API
+    * @dev The bindedTokens and maxAmountsIn should be in the same order of the output of pool.getTokens()
+    * @dev when joining the pool using the native token, the wrapped address should be specified on 0x's API
+    * @param bindedTokens The addresses of the binded tokens to the pool
+    * @param maxAmountsIn The maximum amount of tokens that can be used to join the pool
+    * @param fillQuotes The trades needed before joining the pool (uses 0x's API)
     * @param joiningAsset The address of the input token
     * @param joiningAmount The amount of the input token
     * @param pool The pool's address
     * @param poolAmountOut The amount of pool shares expected to be received
-    * @param bindedTokens The addresses of the binded tokens to the pool
-    * @param maxAmountsIn The maximum amount of tokens that can be used to join the pool
-    * @param fillQuotes The trades needed before joining the pool (uses 0x's API)
     * @param deadline Maximum deadline for accepting the joinswapExternAmountIn
     * @return poolAmountOut The amount of pool shares received
     */
-    function oneAssetJoin( // swap tokens externally and join pool
-        address[] calldata bindedTokens, // must be in the same order as the Pool
+    function oneAssetJoin(
+        address[] calldata bindedTokens,
         uint256[] memory maxAmountsIn,
         ZeroExStruct.Quote[] calldata fillQuotes,
         address joiningAsset,
@@ -607,7 +583,13 @@ contract Proxy is IProxy {
             unchecked {++i;}
         }
 
-        transferAll(joiningAsset, getBalance(joiningAsset));
+        // Each quote represents a unique ERC20 used for joining the pool
+        // If the number of quotes is equal to the number of binded token to the pool
+        // --> the joining asset is not in the pool and the function should transfer
+        // any leftover asset from trading
+        if(fillQuotes.length == bindedTokens.length ) {
+            transferAll(joiningAsset, getBalance(joiningAsset));
+        }
 
         IERC20(pool).transfer(msg.sender, poolAmountOut);
         
@@ -622,11 +604,8 @@ contract Proxy is IProxy {
         address tradedToken = isNative(joiningAsset)? wnative : joiningAsset;
     
         for(uint256 i; i < fillQuotes.length;) {           
-            // Give `spender` an limited allowance to spend this contract's `sellToken`.
-            // Note that for some tokens (e.g., USDT, KNC), you must first reset any existing
-            // allowance to 0 before being able to update it.
-            IERC20(tradedToken).approve(fillQuotes[i].spender, 0);
-            IERC20(tradedToken).approve(fillQuotes[i].spender, fillQuotes[i].sellAmount);
+
+            getApproval(IERC20(tradedToken), fillQuotes[i].spender, fillQuotes[i].sellAmount);
 
             // Call the encoded swap function call on the contract at `swapTarget`
             (bool success,) = zeroEx.call(fillQuotes[i].swapCallData);
@@ -664,11 +643,7 @@ contract Proxy is IProxy {
         
         tokenIn.safeTransferFrom(msg.sender, address(this), amountIn);
 
-        // Give `spender` an limited allowance to spend this contract's `sellToken`.
-        // Note that for some tokens (e.g., USDT, KNC), you must first reset any existing
-        // allowance to 0 before being able to update it.
-        tokenIn.approve(spender, 0);
-        tokenIn.approve(spender, amountIn);
+        getApproval(tokenIn, spender, amountIn);
 
         // Call the encoded swap function call on the contract at `swapTarget`
         bool success;
@@ -678,8 +653,6 @@ contract Proxy is IProxy {
             (success,) = paraswap.call(swapCallData);
         } else if (aggregator == Aggregator.OneInch) {
             (success,) = oneInch.call(swapCallData);
-        } else {
-            _revert(ProxyErr.BAD_AGGREGATOR);
         }
 
         _require(success, ProxyErr.FAILED_CALL);
@@ -723,8 +696,7 @@ contract Proxy is IProxy {
 
         for(uint256 i; i < bindedTokens.length;) {
             maxAmountsIn[i] = mul(maxAmountsIn[i], sharesRatio);
-            IERC20(bindedTokens[i]).safeApprove(pool, 0);
-            IERC20(bindedTokens[i]).safeApprove(pool, maxAmountsIn[i]);
+            getApproval(IERC20(bindedTokens[i]), pool, maxAmountsIn[i]);
             unchecked {++i;}
         }
 
@@ -763,10 +735,7 @@ contract Proxy is IProxy {
                 transferFromAll(tokensIn[i], maxAmountsIn[i]);
             }
 
-            if (IERC20(tokensIn[i]).allowance(address(this), pool) > 0) {
-                IERC20(tokensIn[i]).approve(pool, 0);
-            }
-            IERC20(tokensIn[i]).approve(pool, maxAmountsIn[i]);
+            getApproval(IERC20(tokensIn[i]), pool, maxAmountsIn[i]);
 
             unchecked{++i;}
         }
@@ -817,10 +786,7 @@ contract Proxy is IProxy {
             tokenIn = wnative;
         }
         
-        if (IERC20(tokenIn).allowance(address(this), pool) > 0) {
-            IERC20(tokenIn).approve(pool, 0);
-        }
-        IERC20(tokenIn).approve(pool, tokenAmountIn);
+        getApproval(IERC20(tokenIn), pool, tokenAmountIn);
 
         poolAmountOut = IPool(pool).joinswapExternAmountInMMM(tokenIn, tokenAmountIn, minPoolAmountOut);
         
@@ -838,6 +804,17 @@ contract Proxy is IProxy {
         } else {
             IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
         }
+    }
+
+    function getApproval(IERC20 token, address target, uint256 amount) internal {
+        
+        // required for some ERC20 such as USDT before changing the allowed transferable tokens
+        // https://github.com/d-xo/weird-erc20
+        if (token.allowance(address(this), target) < amount) {
+            token.safeApprove(target, 0);
+            token.safeApprove(target, type(uint256).max);
+        }
+
     }
 
     function getBalance(address token) internal view returns (uint256) {
