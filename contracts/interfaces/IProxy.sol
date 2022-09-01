@@ -181,19 +181,19 @@ interface IProxy {
 
     /**
     * @notice Joins the pool after externally trading an input token with the necessary tokens for the pool
-    * @dev bindedTokens and maxAmountsIn should respect the order of the output of pool.getTokens()
-    * @dev even when you join the pool using the native token, the wrapped address should be specified on 0x's API
+    * @dev The bindedTokens and maxAmountsIn should be in the same order of the output of pool.getTokens()
+    * @dev when joining the pool using the native token, the wrapped address should be specified on 0x's API
+    * @param bindedTokens The addresses of the binded tokens to the pool
+    * @param maxAmountsIn The maximum amount of tokens that can be used to join the pool
+    * @param fillQuotes The trades needed before joining the pool (uses 0x's API)
     * @param joiningAsset The address of the input token
     * @param joiningAmount The amount of the input token
     * @param pool The pool's address
     * @param poolAmountOut The amount of pool shares expected to be received
-    * @param bindedTokens The addresses of the binded tokens to the pool
-    * @param maxAmountsIn The maximum amount of tokens that can be used to join the pool
-    * @param fillQuotes The trades needed before joining the pool (uses 0x's API)
     * @param deadline Maximum deadline for accepting the joinswapExternAmountIn
     * @return poolAmountOut The amount of pool shares received
     */
-    function oneAssetJoin( // swap and join pool
+    function joinPoolVia0x( // swap and join pool
         address[] calldata bindedTokens, // must be in the same order as the Pool
         uint256[] memory maxAmountsIn,
         ZeroExStruct.Quote[] calldata fillQuotes,
