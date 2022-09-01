@@ -364,4 +364,91 @@ describe("Proxy external swap", async () => {
 
     });
 
+    describe("Possible reverts", async () => {
+    
+        it("Revert if minAmountOut not met", async () => {
+
+            const { proxy, initialWETHBalance, weth } = await loadFixture(deployProxyAndGetWETH);
+
+            const tradeParams = {
+                sellToken: 'WETH',
+                buyToken: 'DAI',
+                sellAmount: initialWETHBalance.toString()
+            };
+            
+            await weth.approve(proxy.address, initialWETHBalance);
+
+            let quote: any;
+
+            await Promise.all([
+                    fetch(`https://polygon.api.0x.org/swap/v1/quote?${qs.stringify(tradeParams)}`),
+                ]).then(async(values) => {
+                    quote = await values[0].json();
+                });
+            
+            // Undefined code means the route was successfully calculated
+            expect(quote.code).to.equal(undefined);
+
+            const deadline = Math.floor(Date.now()/1000) + 30 * 60;
+
+            const minTokenOut = 
+                BigInt(parseUnits(quote.guaranteedPrice, 18).toString())*BigInt(quote.sellAmount)/libraryPrecision;
+
+            await expect(proxy.externalSwap(
+                    quote.sellTokenAddress,
+                    quote.sellAmount,
+                    quote.buyTokenAddress,
+                    minTokenOut*2n,
+                    quote.allowanceTarget,
+                    Aggregator.zeroEx,
+                    quote.data,
+                    deadline
+                )
+            ).to.be.revertedWith("PROOXY#03");
+
+        });
+
+        it("Revert if aggregator is not found", async () => {
+
+            const { proxy, initialWETHBalance, weth } = await loadFixture(deployProxyAndGetWETH);
+
+            const tradeParams = {
+                sellToken: 'WETH',
+                buyToken: 'DAI',
+                sellAmount: initialWETHBalance.toString()
+            };
+            
+            await weth.approve(proxy.address, initialWETHBalance);
+
+            let quote: any;
+
+            await Promise.all([
+                    fetch(`https://polygon.api.0x.org/swap/v1/quote?${qs.stringify(tradeParams)}`),
+                ]).then(async(values) => {
+                    quote = await values[0].json();
+                });
+            
+            // Undefined code means the route was successfully calculated
+            expect(quote.code).to.equal(undefined);
+
+            const deadline = Math.floor(Date.now()/1000) + 30 * 60;
+
+            const minTokenOut = 
+                BigInt(parseUnits(quote.guaranteedPrice, 18).toString())*BigInt(quote.sellAmount)/libraryPrecision;
+
+            await expect(proxy.externalSwap(
+                    quote.sellTokenAddress,
+                    quote.sellAmount,
+                    quote.buyTokenAddress,
+                    minTokenOut,
+                    quote.allowanceTarget,
+                    3,
+                    quote.data,
+                    deadline
+                )
+            ).to.be.reverted;
+
+        });
+    });
+
 });
