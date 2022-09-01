@@ -171,27 +171,27 @@ describe("Proxy joinPoolVia0x", async () => {
                 {
                     sellAmount: wethQuote.sellAmount,
                     buyToken: wethQuote.buyTokenAddress,
-                    buyAmount: minExpectedTokensIn[0], // minimum expected amount of WETH
+                    guaranteedAmountOut: minExpectedTokensIn[0], // minimum expected amount of WETH
                     spender: wethQuote.allowanceTarget,
                     swapCallData: wethQuote.data
                 },
                 {
                     sellAmount: usdcQuote.sellAmount,
                     buyToken: usdcQuote.buyTokenAddress,
-                    buyAmount: minExpectedTokensIn[1], // minimum expected amount of USDC
+                    guaranteedAmountOut: minExpectedTokensIn[1], // minimum expected amount of USDC
                     spender: usdcQuote.allowanceTarget,
                     swapCallData: usdcQuote.data
                 },
                 {
                     sellAmount: wbtcQuote.sellAmount,
                     buyToken: wbtcQuote.buyTokenAddress,
-                    buyAmount: minExpectedTokensIn[2], // minimum expected amount of WBTC
+                    guaranteedAmountOut: minExpectedTokensIn[2], // minimum expected amount of WBTC
                     spender: wbtcQuote.allowanceTarget,
                     swapCallData: wbtcQuote.data
                 },
             ]
 
-            await proxy.oneAssetJoin(
+            await proxy.joinPoolVia0x(
                 poolTokens, // must be in the same order as in the Pool
                 maxAmountsIn,
                 fillQuotes,
@@ -267,27 +267,27 @@ describe("Proxy joinPoolVia0x", async () => {
                 {
                     sellAmount: wethQuote.sellAmount,
                     buyToken: wethQuote.buyTokenAddress,
-                    buyAmount: minExpectedTokensIn[0]*2n, // minimum expected amount of WETH
+                    guaranteedAmountOut: minExpectedTokensIn[0]*2n, // minimum expected amount of WETH
                     spender: wethQuote.allowanceTarget,
                     swapCallData: wethQuote.data
                 },
                 {
                     sellAmount: usdcQuote.sellAmount,
                     buyToken: usdcQuote.buyTokenAddress,
-                    buyAmount: minExpectedTokensIn[1], // minimum expected amount of USDC
+                    guaranteedAmountOut: minExpectedTokensIn[1], // minimum expected amount of USDC
                     spender: usdcQuote.allowanceTarget,
                     swapCallData: usdcQuote.data
                 },
                 {
                     sellAmount: wbtcQuote.sellAmount,
                     buyToken: wbtcQuote.buyTokenAddress,
-                    buyAmount: minExpectedTokensIn[2], // minimum expected amount of WBTC
+                    guaranteedAmountOut: minExpectedTokensIn[2], // minimum expected amount of WBTC
                     spender: wbtcQuote.allowanceTarget,
                     swapCallData: wbtcQuote.data
                 },
             ]
 
-            await expect(proxy.oneAssetJoin(
+            await expect(proxy.joinPoolVia0x(
                     poolTokens, // must be in the same order as in the Pool
                     maxAmountsIn,
                     fillQuotes,
@@ -381,7 +381,7 @@ describe("Proxy joinPoolVia0x", async () => {
                         {
                             sellAmount: quote.sellAmount,
                             buyToken: quote.buyTokenAddress,
-                            buyAmount: minExpectedTokensIn.get(quote.buyTokenAddress)!,
+                            guaranteedAmountOut: minExpectedTokensIn.get(quote.buyTokenAddress)!,
                             spender: quote.allowanceTarget,
                             swapCallData: quote.data
                         }
@@ -391,7 +391,7 @@ describe("Proxy joinPoolVia0x", async () => {
                 // Approving $joiningAsset to proxy
                 await joiningAssetERC20.approve(proxy.address, joiningAmount);
 
-                await proxy.oneAssetJoin(
+                await proxy.joinPoolVia0x(
                     poolTokens, // must be in the same order as in the Pool
                     maxAmountsIn,
                     fillQuotes,
@@ -480,14 +480,14 @@ describe("Proxy joinPoolVia0x", async () => {
                 {
                     sellAmount: usdcQuote.sellAmount,
                     buyToken: usdcQuote.buyTokenAddress,
-                    buyAmount: 0,
+                    guaranteedAmountOut: 0,
                     spender: usdcQuote.allowanceTarget,
                     swapCallData: usdcQuote.data
                 },
                 {
                     sellAmount: wbtcQuote.sellAmount,
                     buyToken: wbtcQuote.buyTokenAddress,
-                    buyAmount: 0,
+                    guaranteedAmountOut: 0,
                     spender: wbtcQuote.allowanceTarget,
                     swapCallData: wbtcQuote.data
                 },
@@ -498,7 +498,7 @@ describe("Proxy joinPoolVia0x", async () => {
             await weth.approve(proxy.address, joiningAmount);
 
             await expect(
-                proxy.oneAssetJoin(
+                proxy.joinPoolVia0x(
                     poolTokens, // must be in the same order as in the Pool
                     maxAmountsIn,
                     fillQuotes,
@@ -590,20 +590,20 @@ describe("Proxy joinPoolVia0x", async () => {
                 {
                     sellAmount: wethQuote.sellAmount,
                     buyToken: wethQuote.buyTokenAddress,
-                    buyAmount: minExpectedTokensIn[0], // minimum expected amount of WETH
+                    guaranteedAmountOut: minExpectedTokensIn[0], // minimum expected amount of WETH
                     spender: wethQuote.allowanceTarget,
                     swapCallData: wethQuote.data
                 },
                 {
                     sellAmount: wbtcQuote.sellAmount,
                     buyToken: wbtcQuote.buyTokenAddress,
-                    buyAmount: minExpectedTokensIn[2], // minimum expected amount of WBTC
+                    guaranteedAmountOut: minExpectedTokensIn[2], // minimum expected amount of WBTC
                     spender: wbtcQuote.allowanceTarget,
                     swapCallData: wbtcQuote.data
                 }
             ]
         
-            await proxy.oneAssetJoin(
+            await proxy.joinPoolVia0x(
                 poolTokens, // must be in the same order as in the Pool
                 maxAmountsIn,
                 fillQuotes,

@@ -20,7 +20,7 @@ contract ZeroExStruct {
         // The `buyTokenAddress` field from the API response.
         address buyToken;
         // The `guaranteedPrice` * `sellAmount` fields from the API response. 
-        uint256 buyAmount;
+        uint256 guaranteedAmountOut;
         // The `allowanceTarget` field from the API response.
         address spender;
         // The `data` field from the API response.

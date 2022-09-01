@@ -555,7 +555,7 @@ contract Proxy is IProxy {
     * @param deadline Maximum deadline for accepting the joinswapExternAmountIn
     * @return poolAmountOut The amount of pool shares received
     */
-    function oneAssetJoin(
+    function joinPoolVia0x(
         address[] calldata bindedTokens,
         uint256[] memory maxAmountsIn,
         ZeroExStruct.Quote[] calldata fillQuotes,
@@ -611,7 +611,7 @@ contract Proxy is IProxy {
             (bool success,) = zeroEx.call(fillQuotes[i].swapCallData);
             _require(success, ProxyErr.FAILED_CALL);
             
-            _require(getBalance(fillQuotes[i].buyToken) >= fillQuotes[i].buyAmount, ProxyErr.LIMIT_OUT);
+            _require(getBalance(fillQuotes[i].buyToken) >= fillQuotes[i].guaranteedAmountOut, ProxyErr.LIMIT_OUT);
 
             unchecked{++i;}
         }
