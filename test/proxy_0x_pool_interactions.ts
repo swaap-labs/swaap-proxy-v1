@@ -214,6 +214,94 @@ describe("Proxy joinPoolVia0x", async () => {
             }));
         });
 
+        it("Should fail if tokenAmountOut is not enough", async () => {
+            const {proxy, pool, poolTokens, tokenAmountsInPerPT} = await loadFixture(deployProxyAndGetPoolInfo);
+
+            const wethParams = {
+                sellToken: 'WMATIC',
+                buyToken: 'WETH',
+                sellAmount: '30000000000000000000',
+            };
+
+            const usdcParams = {
+                sellToken: 'WMATIC',
+                buyToken: 'USDC',
+                sellAmount: '30000000000000000000',
+            }
+            
+            const wbtcParams = {
+                sellToken: 'WMATIC',
+                buyToken: '0x1bfd67037b42cf73acf2047067bd4f2c47d9bfd6',
+                sellAmount: '30000000000000000000',
+            }
+            
+            await Promise.all([
+                    fetch(`https://polygon.api.0x.org/swap/v1/quote?${qs.stringify(wethParams)}`),
+                    fetch(`https://polygon.api.0x.org/swap/v1/quote?${qs.stringify(usdcParams)}`),
+                    fetch(`https://polygon.api.0x.org/swap/v1/quote?${qs.stringify(wbtcParams)}`)
+                ]).then(async(values) => {
+                    wethQuote = await values[0].json();
+                    usdcQuote = await values[1].json();
+                    wbtcQuote = await values[2].json();
+                });
+
+            // Undefined code means the route was successfully calculated
+            expect(wethQuote.code).to.equal(undefined);
+            expect(usdcQuote.code).to.equal(undefined);
+            expect(wbtcQuote.code).to.equal(undefined);
+
+            const poolAmountOut = libraryPrecision;
+            const maxAmountsIn = tokenAmountsInPerPT.map((amount: bigint) => amount*1001n/1000n);
+            const deadline = Math.floor(Date.now()/1000) + 30 * 60;
+
+            const joiningAsset: string = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
+            const joiningAmount = BigInt(wethQuote.sellAmount) + BigInt(usdcQuote.sellAmount) + BigInt(wbtcQuote.sellAmount);
+
+            const minExpectedTokensIn = [
+                BigInt(parseUnits(wethQuote.guaranteedPrice, 18).toString())*BigInt(wethQuote.sellAmount)/libraryPrecision,
+                BigInt(parseUnits(usdcQuote.guaranteedPrice, 6).toString())*BigInt(usdcQuote.sellAmount)/libraryPrecision,
+                BigInt(parseUnits(wbtcQuote.guaranteedPrice, 8).toString())*BigInt(wbtcQuote.sellAmount)/libraryPrecision,
+            ]
+
+            const fillQuotes = [
+                {
+                    sellAmount: wethQuote.sellAmount,
+                    buyToken: wethQuote.buyTokenAddress,
+                    buyAmount: minExpectedTokensIn[0]*2n, // minimum expected amount of WETH
+                    spender: wethQuote.allowanceTarget,
+                    swapCallData: wethQuote.data
+                },
+                {
+                    sellAmount: usdcQuote.sellAmount,
+                    buyToken: usdcQuote.buyTokenAddress,
+                    buyAmount: minExpectedTokensIn[1], // minimum expected amount of USDC
+                    spender: usdcQuote.allowanceTarget,
+                    swapCallData: usdcQuote.data
+                },
+                {
+                    sellAmount: wbtcQuote.sellAmount,
+                    buyToken: wbtcQuote.buyTokenAddress,
+                    buyAmount: minExpectedTokensIn[2], // minimum expected amount of WBTC
+                    spender: wbtcQuote.allowanceTarget,
+                    swapCallData: wbtcQuote.data
+                },
+            ]
+
+            await expect(proxy.oneAssetJoin(
+                    poolTokens, // must be in the same order as in the Pool
+                    maxAmountsIn,
+                    fillQuotes,
+                    joiningAsset,
+                    joiningAmount,
+                    pool.address,
+                    poolAmountOut,
+                    deadline,
+                    {value: joiningAmount}
+                )
+            ).to.be.revertedWith("PROOXY#03");
+
+        });
+
         poolTokensWithContext.forEach(joiningAsset => {
 
             it(`One asset join with ${joiningAsset.symbol}, while ${joiningAsset.symbol} is the limiting token`, async () => {
