@@ -15,7 +15,12 @@ For an in-depth documentation of Swaap, see our [docs](https://docs.swaap.financ
 
 ## Get Started
 
-### Build and Test
+### Preamble
+Create a .env file and define the needed environment variables as in the [example](./.env-example).
+
+```POLYGON_RPC_URL``` must be defined to launch the tests.
+
+### Build and Test 
 ```bash
 $ yarn # install all dependencies
 $ yarn build # compile all contracts
