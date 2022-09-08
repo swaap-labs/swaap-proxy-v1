@@ -18,14 +18,16 @@ pragma solidity =0.8.12;
 */
 library ProxyErr {
 
-    uint256 internal constant REENTRY         = 0;
-    uint256 internal constant PASSED_DEADLINE = 1;
-    uint256 internal constant LIMIT_IN        = 2;
-    uint256 internal constant LIMIT_OUT       = 3;
-    uint256 internal constant BAD_LIMIT_IN    = 4;
-    uint256 internal constant NEGATIVE_PRICE  = 5;
-    uint256 internal constant FAILED_CALL     = 6;
-
+    uint256 internal constant REENTRY               = 0;
+    uint256 internal constant PASSED_DEADLINE       = 1;
+    uint256 internal constant LIMIT_IN              = 2;
+    uint256 internal constant LIMIT_OUT             = 3;
+    uint256 internal constant BAD_LIMIT_IN          = 4;
+    uint256 internal constant NEGATIVE_PRICE        = 5;
+    uint256 internal constant FAILED_CALL           = 6;
+    uint256 internal constant NOT_SWAAPLABS         = 7;
+    uint256 internal constant NOT_PENDING_SWAAPLABS = 8;
+    uint256 internal constant PAUSED_PROXY          = 9;
 }
 
 /**

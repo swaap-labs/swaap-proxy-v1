@@ -27,10 +27,12 @@ import "@swaap-labs/swaap-core-v1/contracts/interfaces/IPool.sol";
 import "@swaap-labs/swaap-core-v1/contracts/structs/Struct.sol";
 
 import "./interfaces/IProxy.sol";
+import "./interfaces/IProxyOwner.sol";
+
 import "./interfaces/IERC20WithDecimals.sol";
 import "./interfaces/IWrappedERC20.sol";
 
-contract Proxy is IProxy {
+contract Proxy is IProxy, IProxyOwner {
 
     using SafeERC20 for IERC20;
 
@@ -53,9 +55,13 @@ contract Proxy is IProxy {
         OneInch
     }
 
+    bool    private paused;
+    address private swaaplabs;
+    address private pendingSwaaplabs;
+    
     address immutable private wnative;
-    address constant private NATIVE_ADDRESS = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
-    uint256 constant private ONE = 10 ** 18;
+    address constant  private NATIVE_ADDRESS = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
+    uint256 constant  private ONE = 10 ** 18;
     address immutable private zeroEx;
     address immutable private paraswap;
     address immutable private oneInch;
@@ -65,6 +71,77 @@ contract Proxy is IProxy {
         zeroEx = _zeroEx;
         paraswap = _paraswap;
         oneInch = _oneInch;
+        swaaplabs = msg.sender;
+    }
+
+    modifier _whenNotPaused() {
+        _require(!paused, ProxyErr.PAUSED_PROXY);
+        _;
+    }
+
+    modifier _onlySwaapLabs() {
+        _require(msg.sender == swaaplabs, ProxyErr.NOT_SWAAPLABS);
+        _;
+    }
+
+    /**
+    * @notice Pause the proxy
+    * @dev Pause disables all of the proxy's functionalities
+    */
+    function pauseProxy() 
+    external
+    _onlySwaapLabs
+    {
+        paused = true;
+        emit LOG_PAUSED_PROXY();
+    }
+
+    /**
+    * @notice Resume the factory's pools
+    * @dev Unpausing re-enables all the proxy's functionalities
+    */
+    function resumeProxy()
+    external 
+    _onlySwaapLabs
+    {
+        paused = false;
+        emit LOG_UNPAUSED_PROXY();
+    }
+
+    /**
+    * @notice Allows an owner to begin transferring ownership to a new address,
+    * pending.
+    * @param _to The new pending owner's address
+    */
+    function transferOwnership(address _to)
+    external
+    _onlySwaapLabs
+    {
+        pendingSwaaplabs = _to;
+        emit LOG_TRANSFER_REQUESTED(msg.sender, _to);
+    }
+
+    /**
+    * @notice Allows an ownership transfer to be completed by the recipient.
+    */
+    function acceptOwnership()
+    external
+    {
+        _require(msg.sender == pendingSwaaplabs, ProxyErr.NOT_PENDING_SWAAPLABS);
+
+        address oldOwner = swaaplabs;
+        swaaplabs = msg.sender;
+        pendingSwaaplabs = address(0);
+
+        emit LOG_NEW_SWAAPLABS(oldOwner, msg.sender);
+    }
+
+    function getSwaaplabs()
+    external
+    view
+    returns (address)
+    {
+        return swaaplabs;
     }
 
     /**
@@ -88,6 +165,7 @@ contract Proxy is IProxy {
     )
     external payable
     _beforeDeadline(deadline)
+    _whenNotPaused
     _lock
     returns (uint256 totalAmountOut)
     {
@@ -139,6 +217,7 @@ contract Proxy is IProxy {
     )
     external payable
     _beforeDeadline(deadline)
+    _whenNotPaused
     _lock
     returns (uint256 totalAmountIn)
     {
@@ -200,6 +279,7 @@ contract Proxy is IProxy {
     )
     external payable
     _beforeDeadline(deadline)
+    _whenNotPaused
     _lock
     returns (uint256 totalAmountOut)
     {
@@ -271,6 +351,7 @@ contract Proxy is IProxy {
     )
     external payable
     _beforeDeadline(deadline)
+    _whenNotPaused
     _lock
     returns (uint256 totalAmountIn)
     {
@@ -378,6 +459,7 @@ contract Proxy is IProxy {
     ) 
     external payable
     _beforeDeadline(deadline)
+    _whenNotPaused
     _lock
     returns (address poolAddress)
     {
@@ -438,6 +520,7 @@ contract Proxy is IProxy {
     )
     external payable
     _beforeDeadline(deadline)
+    _whenNotPaused
     _lock
     returns (address poolAddress)
     {
@@ -487,6 +570,7 @@ contract Proxy is IProxy {
     ) 
     external payable
     _beforeDeadline(deadline)
+    _whenNotPaused
     _lock
     returns (address poolAddress)
     {
@@ -567,6 +651,7 @@ contract Proxy is IProxy {
     )
     external payable
     _beforeDeadline(deadline)
+    _whenNotPaused
     _lock
     returns (uint256)
     {
@@ -638,6 +723,7 @@ contract Proxy is IProxy {
     )
     external
     _beforeDeadline(deadline)
+    _whenNotPaused
     _lock
     {
         
@@ -721,6 +807,7 @@ contract Proxy is IProxy {
     )
     external payable
     _beforeDeadline(deadline)
+    _whenNotPaused
     _lock
     {
 
@@ -776,6 +863,7 @@ contract Proxy is IProxy {
     )
     external payable
     _beforeDeadline(deadline)
+    _whenNotPaused
     _lock
     returns (uint256 poolAmountOut)
     {
