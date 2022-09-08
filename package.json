@@ -1,6 +1,6 @@
 {
   "name": "@swaap-labs/swaap-proxy-v1",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Swaap Protocol v1: proxy smart contracts",
   "license": "GPL-3.0-only",
   "contributors": [
