@@ -26,17 +26,8 @@ const config: HardhatUserConfig = {
     },
     polygon: {
       url: `${process.env.POLYGON_RPC_URL}`,
+      accounts: [`${process.env.PRIVATE_KEY}`]
     },
-    rinkeby: {
-      url: `${process.env.RINKEBY_RPC_URL}`,
-      accounts: {
-        mnemonic: "test test test test test test test test test test test junk",
-        path: "m/44'/60'/0'/0",
-        initialIndex: 0,
-        count: 20,
-        passphrase: "",
-      },
-    }
   }
 };
 

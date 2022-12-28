@@ -28,8 +28,8 @@
     "test:verbose": "VERBOSE=true npx hardhat test",
     "coverage": "yarn solidity-coverage",
     "lint:contracts": "solhint contracts/**/*.sol",
-    "deploy:polygon": "npx hardhat run scripts/proxy-deployments/deploy.ts --network polygon",
-    "deploy:rinkeby": "npx hardhat run scripts/proxy-deployments/deploy.ts --network rinkeby"
+    "deploy:polygon": "npx hardhat run scripts/proxy-deployment/deploy.ts --network polygon",
+    "deploy:rinkeby": "npx hardhat run scripts/proxy-deployment/deploy.ts --network rinkeby"
   },
   "dependencies": {
     "@chainlink/contracts": "^0.1.9",
